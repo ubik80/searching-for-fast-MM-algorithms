@@ -134,6 +134,7 @@ def diffMap(id,mutex,success):
             np.random.rand(p*nn).reshape([p,nn])*2.0-1.0,
             np.random.rand(nn*p).reshape([nn,p])*2.0-1.0]
             i=0
+            BF=bf.bloomFilter(2*nn*p,0.00001)
         i+=1
     return #diffMap
 
