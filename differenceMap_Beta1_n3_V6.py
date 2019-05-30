@@ -15,13 +15,13 @@ def PA(W):
     W[2]=np.minimum(np.maximum(np.round(W[2]),-1.0),1.0)
     return W #PA
 
-def PB(W,id,diff):
+def PB(W,id):
     p=W[0].shape[0]
     nn=W[0].shape[1]
     n=int(np.sqrt(nn))
     oldDiff=99999.9
     solved=False
-    for i in range(1):
+    for i in range(5):
         Wa=W[0].copy()
         Wb=W[1].copy()
         Wc=W[2].copy()
@@ -44,7 +44,7 @@ def PB(W,id,diff):
             np.random.rand(p*nn).reshape([p,nn])*2.0-1.0,
             np.random.rand(nn*p).reshape([nn,p])*2.0-1.0]
             W[0],W[1],W[2],eh,s=bi.findCalcRule(n,p,3000000,W[0],W[1],W[2],limit=0.01,nue=0.1)
-    return W #PB
+    return W,not solved #PB
 
 def checkSolution(W):
     p=W[0].shape[0]
@@ -104,9 +104,8 @@ def diffMap(id,mutex,success):
     BF=bf.bloomFilter(2*nn*p,0.00001)
 
     i=0
-    norm2Delta=999.9
     while success.value==0:
-        PBx=PB(W.copy(),id,norm2Delta)
+        PBx,failed=PB(W.copy(),id)
         PAy=PA([2.0*PBx[0]-W[0],2.0*PBx[1]-W[1],2.0*PBx[2]-W[2]])
         delta=[PAy[0]-PBx[0],PAy[1]-PBx[1],PAy[2]-PBx[2]]
         norm2Delta=np.linalg.norm(delta[0],2)**2+np.linalg.norm(delta[1],2)**2+np.linalg.norm(delta[2],2)**2
@@ -114,13 +113,14 @@ def diffMap(id,mutex,success):
         W=[W[0]+delta[0],W[1]+delta[1],W[2]+delta[2]]
 
         cycle=BF.store(PAy)
+        if cycle:
+            W[0]+=np.random.rand(p*nn).reshape([p,nn])-0.5
+            W[1]+=np.random.rand(p*nn).reshape([p,nn])-0.5
+            W[2]+=np.random.rand(p*nn).reshape([nn,p])-0.5
 
         mutex.acquire()
         if cycle:
             print("**** Zyklus entdeckt! *****")
-            W[0]+=np.random.rand(p*nn).reshape([p,nn])-0.5
-            W[1]+=np.random.rand(p*nn).reshape([p,nn])-0.5
-            W[2]+=np.random.rand(p*nn).reshape([nn,p])-0.5
         if i%1==0:
             print("---------------------------")
             print("Prozess:",id)
@@ -130,14 +130,28 @@ def diffMap(id,mutex,success):
             print("Lösung gefunden?")
             if checkSolution(W):
                 W=PA(W)
-                np.save("solution_"+str(n)+"_"+str(id),[W[0],W[1],W[2]])
+                np.save("solution_"+str(n)+"_"+str(id)+str(time.time()),[W[0],W[1],W[2]])
                 print(".... Lösung korrekt")
-                success.value=1
-                mutex.release()
-                return #diffMap
+                W=[np.random.rand(p*nn).reshape([p,nn])*2.0-1.0,
+                np.random.rand(p*nn).reshape([p,nn])*2.0-1.0,
+                np.random.rand(nn*p).reshape([nn,p])*2.0-1.0]
+                i=0
+                #success.value=1
+                #mutex.release()
+                #return #diffMap
             else: print(".... keine gültige Lösung")
+        if i==200:
+            print(i," cycles -> Reset")
+
         mutex.release()
+
         i+=1
+        if failed: i=0
+        if i==200:
+            W=[np.random.rand(p*nn).reshape([p,nn])*2.0-1.0,
+            np.random.rand(p*nn).reshape([p,nn])*2.0-1.0,
+            np.random.rand(nn*p).reshape([nn,p])*2.0-1.0]
+            i=0
     return #diffMap
 
 if __name__ == '__main__':
