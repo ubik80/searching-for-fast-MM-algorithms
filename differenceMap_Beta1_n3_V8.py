@@ -120,7 +120,7 @@ def diffMap(id,mutex,success):
             else: print(".... keine gültige Lösung")
         if cycle:
             print("**** Zyklus entdeckt! *****")
-        if i==1000:
+        if i==10000:
             print(i," cycles -> Reset")
         mutex.release()
 
@@ -129,7 +129,7 @@ def diffMap(id,mutex,success):
             W[1]+=np.random.rand(p*nn).reshape([p,nn])-0.5
             W[2]+=np.random.rand(p*nn).reshape([nn,p])-0.5
 
-        if i==1000:
+        if i==10000:
             W=[np.random.rand(p*nn).reshape([p,nn])*2.0-1.0,
             np.random.rand(p*nn).reshape([p,nn])*2.0-1.0,
             np.random.rand(nn*p).reshape([nn,p])*2.0-1.0]
