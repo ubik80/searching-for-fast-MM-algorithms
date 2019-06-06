@@ -62,7 +62,7 @@ for i in range(nn):
     for ii in range(nn):
         if np.array_equal(W1[1][:,i],W6[1][:,ii]): print(i,ii)
 
-WW=W6
+WW=W4
 
 sum=0
 W=WW[0]

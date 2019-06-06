@@ -31,7 +31,7 @@ def rankWeight(i,j,Wa,Wb,Wc,baseDev,matSel=0):
     return ret
 
 @jit(nopython=True,nogil=True,cache=True)
-def findWeight(Wa,Wb,Wc,MA,MB,MC,profileA):
+def findWeight(Wa,Wb,Wc,MA,MB,MC,profileA,profileB):
     nn=Wa.shape[1]
     p=Wa.shape[0]
     n=int(np.sqrt(nn))
@@ -53,7 +53,7 @@ def findWeight(Wa,Wb,Wc,MA,MB,MC,profileA):
                     matSel=0
     for i in range(p):
         for j in range(nn):
-            if MB[i,j]==1:
+            if MB[i,j]==1 and profileB[i,j]==1:
                 err=rankWeight(i,j,Wa,Wb,Wc,baseDev,1)
                 if err<bestErr:
                     bestErr=err
@@ -72,7 +72,7 @@ def findWeight(Wa,Wb,Wc,MA,MB,MC,profileA):
     return bestI,bestJ,bestErr,matSel
 
 @jit(nopython=True,nogil=True,cache=True)
-def resets(MA,MB,MC,profileA):
+def resets(MA,MB,MC,profileA,profileB):
     nn=MA.shape[1]
     p=MA.shape[0]
     resets=np.random.randint(np.floor((3*p*nn-np.sum(MA)-np.sum(MB)-np.sum(MC))-1))+1
@@ -87,7 +87,7 @@ def resets(MA,MB,MC,profileA):
                     ss=True
             elif jj<2*nn:
                 jj-=nn
-                if MB[ii,jj]==0:
+                if MB[ii,jj]==0 and profileB[ii,jj]==1:
                     MB[ii,jj]=1.0
                     ss=True
             else:
@@ -98,7 +98,7 @@ def resets(MA,MB,MC,profileA):
     return
 
 def intSolutionSearch(n,p,maxTries,maxNumIters,tol,
-bestWa,bestWb,bestWc,bestMA,bestMB,bestMC,mutex,id,profileA):
+bestWa,bestWb,bestWc,bestMA,bestMB,bestMC,mutex,id,profileA,profileB):
 
     useFileSystem=False
     iterFact=1
@@ -128,7 +128,7 @@ bestWa,bestWb,bestWc,bestMA,bestMB,bestMC,mutex,id,profileA):
 
     for tries in range(maxTries):
 
-        i,j,err,matSel=findWeight(Wa,Wb,Wc,MA,MB,MC,profileA)
+        i,j,err,matSel=findWeight(Wa,Wb,Wc,MA,MB,MC,profileA,profileB)
         if matSel==0:
             MA[i,j]=0.0
             Wa[i,j]=float(min(max(round(Wa[i,j]),-1.0),1.0))
@@ -144,7 +144,7 @@ bestWa,bestWb,bestWc,bestMA,bestMB,bestMC,mutex,id,profileA):
         iterFact=1
 
         if not success:
-            resets(MA,MB,MC,profileA)
+            resets(MA,MB,MC,profileA,profileB)
             iterFact=4
 
         mutex.acquire()
@@ -217,15 +217,15 @@ if __name__ == '__main__':
     numOfProc=int(mp.cpu_count())
     print("Anzahl Prozessoren: ",numOfProc)
 
-    n=3
-    p=23
+    n=2
+    p=7
     nn=int(n**2)
 
     tol=0.01
 
-    # mMA=np.ones([p,nn],dtype=float)
-    # mMB=np.ones([p,nn],dtype=float)
-    # mMC=np.ones([nn,p],dtype=float)
+    mMA=np.ones([p,nn],dtype=float)
+    mMB=np.ones([p,nn],dtype=float)
+    mMC=np.ones([nn,p],dtype=float)
     # mWa=np.zeros([p,nn],dtype=float)
     # mWb=np.zeros([p,nn],dtype=float)
     # mWc=np.zeros([nn,p],dtype=float)
@@ -235,19 +235,39 @@ if __name__ == '__main__':
     #     mWa=np.random.rand(p,nn)*2.0-1.0
     #     mWb=np.random.rand(p,nn)*2.0-1.0
     #     mWc=np.random.rand(nn,p)*2.0-1.0
-    #     mWa,mWb,mWc,errHist,success=bi.findCalcRule(n,p,20000000,
+    #     mWa,mWb,mWc,errHist,success=bi.findCalcRule(n,p,3000000,
     #     mWa,mWb,mWc,mMA,mMB,mMC,tol,nue=0.1)
     # print("Lösung initialisiert")
-    # np.save("bestSolution_n_3",[mWa,mWb,mWc,mMA,mMB,mMC])
+    # np.save("bestSolution_n_2",[mWa,mWb,mWc,mMA,mMB,mMC])
 
-    mWa,mWb,mWc,mMA,mMB,mMC=np.load("bestSolution_n_3.npy",allow_pickle=True)
+    #mWa,mWb,mWc,mMA,mMB,mMC=np.load("bestSolution_n_2.npy",allow_pickle=True)
+
+    b=2
 
     profileA=np.ones(mMA.shape)
-    for i in range(nn):
+    for i in range(b):
         profileA[i,:]=0.0
-        mWa[i,:]=0.0
-        mWa[i,i]=1.0
     mMA*=profileA
+    offset=i+1
+
+    profileB=np.ones(mMB.shape)
+    for i in range(b):
+        profileB[i+offset,:]=0.0
+    mMB*=profileB
+
+    success=False
+    while not success:
+        print("initiiere Lösung ...")
+        mWa=np.random.rand(p,nn)*2.0-1.0
+        mWb=np.random.rand(p,nn)*2.0-1.0
+        mWc=np.random.rand(nn,p)*2.0-1.0
+        for i in range(b):
+            mWa[i,:]=0.0
+            mWa[i,i]=1.0
+            mWb[i+offset,:]=0.0
+            mWb[i+offset,i]=1.0
+        mWa,mWb,mWc,errHist,success=bi.findCalcRule(n,p,10000000,
+        mWa,mWb,mWc,mMA,mMB,mMC,tol,nue=0.1)
 
     mutex=mp.Lock()
     bestWa=mp.RawArray('d',mWa.flatten())
@@ -258,8 +278,8 @@ if __name__ == '__main__':
     bestMC=mp.RawArray('d',mMC.flatten())
 
     procs=[mp.Process(target=intSolutionSearch,
-    args=(n,p,50000,1000000,tol,bestWa,bestWb,bestWc,bestMA,bestMB,bestMC,mutex,i,
-    profileA))
+    args=(n,p,50000,3000000,tol,bestWa,bestWb,bestWc,bestMA,bestMB,bestMC,mutex,i,
+    profileA,profileB))
     for i in range(numOfProc)]
 
     for pp in procs:pp.start()
