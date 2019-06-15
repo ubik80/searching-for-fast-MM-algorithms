@@ -150,7 +150,7 @@ def diffMap(id,mutex,success):
         if cycle:
             print("**** Zyklus entdeckt! *****")
             print("**** cyclCnt: ",cyclCnt)
-        if i>1500 and norm2Delta>3.0:
+        if i>2000 and norm2Delta>3.0:
         #if i==2000:
             print(i," cycles -> Reset")
         mutex.release()
@@ -159,7 +159,7 @@ def diffMap(id,mutex,success):
             W[0]+=(np.random.rand(p*nn).reshape([p,nn])*2.0-1.0)*0.05*cyclCnt
             W[1]+=(np.random.rand(p*nn).reshape([p,nn])*2.0-1.0)*0.05*cyclCnt
             W[2]+=(np.random.rand(p*nn).reshape([nn,p])*2.0-1.0)*0.05*cyclCnt
-        if i>1500 and norm2Delta>3.0:
+        if i>2000 and norm2Delta>3.0:
         #if i==2000:
             W,startVals=init(startVals)
             i=0
