@@ -152,13 +152,16 @@ def diffMap(id,mutex,success):
                 np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time()),[W[0],W[1],W[2],diffs,numOfIters,numOfCycles])
                 print(".... Lösung korrekt")
                 W,startVals=init(startVals)
+                numOfCycles=0
+                numOfIters=0
+                diffs=[]
                 i=0
             else: print(".... keine gültige Lösung")
         if cycle:
             print("**** Zyklus entdeckt! *****")
             print("**** cyclCnt: ",cyclCnt)
             numOfCycles+=1
-        if i>2000 and norm2Delta>3.0:
+        if i>5000 and norm2Delta>3.0:
             print(i," cycles -> Reset")
         mutex.release()
 
@@ -166,11 +169,16 @@ def diffMap(id,mutex,success):
             W[0]+=(np.random.rand(p*nn).reshape([p,nn])*2.0-1.0)*0.05*cyclCnt
             W[1]+=(np.random.rand(p*nn).reshape([p,nn])*2.0-1.0)*0.05*cyclCnt
             W[2]+=(np.random.rand(p*nn).reshape([nn,p])*2.0-1.0)*0.05*cyclCnt
-        if i>2000 and norm2Delta>3.0:
+        if i>5000 and norm2Delta>3.0:
+            seed=int(time.time())+int(uuid.uuid4())+id
+            np.random.seed(seed%135790)
             W,startVals=init(startVals)
             i=0
             BF=bf.bloomFilter(2*nn*p,0.00001)
             BFs=[bf.bloomFilter(2*nn*p,0.00001) for b in range(20)]
+            numOfCycles=0
+            numOfIters=0
+            diffs=[]
         i+=1
     return #diffMap
 
