@@ -19,8 +19,29 @@ def PB(W,id):
     p=W[0].shape[0]
     nn=W[0].shape[1]
     n=int(np.sqrt(nn))
-    W[0],W[1],W[2],eh,success=bi.findCalcRule(n,p,3000000,W[0],W[1],W[2],limit=0.01,nue=0.1)
-    return W,success #PB
+    minDist=99999.9
+    solFound=False
+    WaRet=[]
+    WbRet=[]
+    WcRet=[]
+    for c in range(3):
+        Wa=W[0].copy()
+        Wb=W[1].copy()
+        Wc=W[2].copy()
+        Wa,Wb,Wc,eh,success=bi.findCalcRule(n,p,3000000,Wa,Wb,Wc,limit=0.01,nue=0.1)
+        if success:
+            dist=np.linalg.norm(Wa-W[0],2)**2+np.linalg.norm(Wb-W[1],2)**2+np.linalg.norm(Wc-W[2],2)**2
+            dist.np.sqrt(dist)
+            if dist<minDist:
+                solFound=True
+                minDist=dist
+                WaRet=Wa.copy()
+                WbRet=Wb.copy()
+                WcRet=Wc.copy()
+                #print("minDist=",minDist)
+    if solFound:
+        return [WaRet,WbRet,WcRet],True
+    return W,False #PB
 
 def checkSolution(W):
     p=W[0].shape[0]
@@ -65,6 +86,34 @@ def checkSolution(W):
     ret=fastLoop(n,nn,p,BIdx,c,Wa,Wb,Wc)
     return ret # checkSolution
 
+def init(startVals):
+    p=startVals[0][0].shape[0]
+    nn=startVals[0][0].shape[1]
+    n=int(np.sqrt(nn))
+    candidates=[[np.random.rand(p*nn).reshape([p,nn])*2.0-1.0,
+    np.random.rand(p*nn).reshape([p,nn])*2.0-1.0,
+    np.random.rand(nn*p).reshape([nn,p])*2.0-1.0] for i in range(10)]
+    ps=np.ones(len(candidates))
+
+    if len(startVals)>0:
+        for i in range(len(candidates)):
+            c=candidates[i]
+            distances=np.zeros(len(startVals))
+            for ii in range(len(startVals)):
+                s=startVals[ii]
+                d=np.linalg.norm(c[0]-s[0],2)**2
+                +np.linalg.norm(c[1]-s[1],2)**2
+                +np.linalg.norm(c[2]-s[2],2)**2
+                d=np.sqrt(d)
+                distances[ii]=d
+            ps[i]=np.sum(distances)
+    ps/=np.sum(ps)
+    print(ps)
+    draw=np.random.multinomial(1,ps)
+    draw=np.argwhere(draw==1)[0][0]
+    startVals.append(candidates[draw])
+    return candidates[draw].copy(),startVals #init
+
 def diffMap(id,mutex,success):
     p=23
     n=3
@@ -75,10 +124,16 @@ def diffMap(id,mutex,success):
     W=[np.random.rand(p*nn).reshape([p,nn])*2.0-1.0,
     np.random.rand(p*nn).reshape([p,nn])*2.0-1.0,
     np.random.rand(nn*p).reshape([nn,p])*2.0-1.0]
+    startVals=[]
+    startVals.append(W)
     BF=bf.bloomFilter(2*nn*p,0.00001)
     BFs=[bf.bloomFilter(2*nn*p,0.00001) for b in range(20)]
     i=0
     cyclCnt=-999
+
+    numOfCycles=0
+    numOfIters=0
+    diffs=[]
 
     while success.value==0:
         s=False
@@ -88,15 +143,15 @@ def diffMap(id,mutex,success):
                 print("   Prz: ",id," BP failed -> reset")
                 seed=int(time.time())+int(uuid.uuid4())+id
                 np.random.seed(seed%135745)
-                W=[np.random.rand(p*nn).reshape([p,nn])*2.0-1.0,
-                np.random.rand(p*nn).reshape([p,nn])*2.0-1.0,
-                np.random.rand(nn*p).reshape([nn,p])*2.0-1.0]
+                W,startVals=init(startVals)
                 i=0
         PAy=PA([2.0*PBx[0]-W[0],2.0*PBx[1]-W[1],2.0*PBx[2]-W[2]])
         delta=[PAy[0]-PBx[0],PAy[1]-PBx[1],PAy[2]-PBx[2]]
         W=[W[0]+delta[0],W[1]+delta[1],W[2]+delta[2]]
         norm2Delta=np.linalg.norm(delta[0],2)**2+np.linalg.norm(delta[1],2)**2+np.linalg.norm(delta[2],2)**2
         norm2Delta=np.sqrt(norm2Delta)
+
+        diffs.append(norm2Delta)
 
         cycle=BF.store(PAy)
         for b in range(len(BFs)):
@@ -114,17 +169,20 @@ def diffMap(id,mutex,success):
             print("Lösung gefunden?")
             if checkSolution(W):
                 W=PA(W)
-                np.save("solution_"+str(n)+"_"+str(id)+str(time.time()),[W[0],W[1],W[2]])
+                numOfIters=i
+                np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time()),[W[0],W[1],W[2],diffs,numOfIters,numOfCycles])
                 print(".... Lösung korrekt")
-                W=[np.random.rand(p*nn).reshape([p,nn])*2.0-1.0,
-                np.random.rand(p*nn).reshape([p,nn])*2.0-1.0,
-                np.random.rand(nn*p).reshape([nn,p])*2.0-1.0]
+                W,startVals=init(startVals)
+                numOfCycles=0
+                numOfIters=0
+                diffs=[]
                 i=0
             else: print(".... keine gültige Lösung")
         if cycle:
             print("**** Zyklus entdeckt! *****")
             print("**** cyclCnt: ",cyclCnt)
-        if i==3000: #3000
+            numOfCycles+=1
+        if i>2000 and norm2Delta>3.0:
             print(i," cycles -> Reset")
         mutex.release()
 
@@ -132,14 +190,16 @@ def diffMap(id,mutex,success):
             W[0]+=(np.random.rand(p*nn).reshape([p,nn])*2.0-1.0)*0.05*cyclCnt
             W[1]+=(np.random.rand(p*nn).reshape([p,nn])*2.0-1.0)*0.05*cyclCnt
             W[2]+=(np.random.rand(p*nn).reshape([nn,p])*2.0-1.0)*0.05*cyclCnt
-
-        if i==3000: #3000
-            W=[np.random.rand(p*nn).reshape([p,nn])*2.0-1.0,
-            np.random.rand(p*nn).reshape([p,nn])*2.0-1.0,
-            np.random.rand(nn*p).reshape([nn,p])*2.0-1.0]
+        if i>2000 and norm2Delta>3.0:
+            seed=int(time.time())+int(uuid.uuid4())+id
+            np.random.seed(seed%135790)
+            W,startVals=init(startVals)
             i=0
             BF=bf.bloomFilter(2*nn*p,0.00001)
             BFs=[bf.bloomFilter(2*nn*p,0.00001) for b in range(20)]
+            numOfCycles=0
+            numOfIters=0
+            diffs=[]
         i+=1
     return #diffMap
 
@@ -157,11 +217,6 @@ if __name__ == '__main__':
 
     end = time.time()
     print("Dauer:", end - start)
-
-
-
-
-
 
 
 

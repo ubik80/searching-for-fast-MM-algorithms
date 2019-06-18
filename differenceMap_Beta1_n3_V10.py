@@ -161,7 +161,7 @@ def diffMap(id,mutex,success):
             print("**** Zyklus entdeckt! *****")
             print("**** cyclCnt: ",cyclCnt)
             numOfCycles+=1
-        if i>5000 and norm2Delta>3.0:
+        if i>2000 and norm2Delta>3.0:
             print(i," cycles -> Reset")
         mutex.release()
 
@@ -169,7 +169,7 @@ def diffMap(id,mutex,success):
             W[0]+=(np.random.rand(p*nn).reshape([p,nn])*2.0-1.0)*0.05*cyclCnt
             W[1]+=(np.random.rand(p*nn).reshape([p,nn])*2.0-1.0)*0.05*cyclCnt
             W[2]+=(np.random.rand(p*nn).reshape([nn,p])*2.0-1.0)*0.05*cyclCnt
-        if i>5000 and norm2Delta>3.0:
+        if i>2000 and norm2Delta>3.0:
             seed=int(time.time())+int(uuid.uuid4())+id
             np.random.seed(seed%135790)
             W,startVals=init(startVals)
@@ -184,7 +184,7 @@ def diffMap(id,mutex,success):
 
 if __name__ == '__main__':
     start = time.time()
-    numOfProc=int(mp.cpu_count())*0+4
+    numOfProc=int(mp.cpu_count())
     print("Anzahl Prozessoren: ",numOfProc)
 
     mutex=mp.Lock()
