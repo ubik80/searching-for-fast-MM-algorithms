@@ -31,7 +31,7 @@ def PB(W,id):
         Wa,Wb,Wc,eh,success=bi.findCalcRule(n,p,3000000,Wa,Wb,Wc,limit=0.01,nue=0.1)
         if success:
             dist=np.linalg.norm(Wa-W[0],2)**2+np.linalg.norm(Wb-W[1],2)**2+np.linalg.norm(Wc-W[2],2)**2
-            dist.np.sqrt(dist)
+            dist=np.sqrt(dist)
             if dist<minDist:
                 solFound=True
                 minDist=dist
