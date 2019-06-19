@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 np.set_printoptions(precision=2, suppress=True)
 
+Wa,Wb,Wc,diffs,numOfIters,numOfCycles=np.load("solution_3_1278_1560893173.206902.npy",allow_pickle=True)
 Wa,Wb,Wc,diffs,numOfIters,numOfCycles=np.load("solution_3_163_1560840678.386328.npy",allow_pickle=True)
 
 nn=Wc.shape[0]
