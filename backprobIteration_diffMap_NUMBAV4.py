@@ -65,4 +65,22 @@ def findCalcRule(n,p,numIters,Wa,Wb,Wc,limit=0.01,nue=0.1):
     return Wa,Wb,Wc,errHist,success #findCalcRule
 
 if __name__ == '__main__':
-    pass
+    n=3
+    nn=9
+    p=23
+
+    Wa=np.random.rand(p,nn)
+    Wb=np.random.rand(p,nn)
+    Wc=np.random.rand(nn,p)
+    M=np.ones(Wc.shape)
+
+    start = time. time()
+    Wa,Wb,Wc,errHist,success=findCalcRule(n,p,3000000,Wa,Wb,Wc,0.01,0.1)
+    cs.checkResult(Wa,Wb,Wc,True,0.05)
+    end = time. time()
+    print("time: ",end - start)
+    print(success)
+
+    plt.plot(errHist)
+    plt.xlabel('iteration')
+    plt.ylabel('error')
