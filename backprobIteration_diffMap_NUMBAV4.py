@@ -81,6 +81,10 @@ if __name__ == '__main__':
     print("time: ",end - start)
     print(success)
 
+    plt.rcParams.update({'font.size': 10})
     plt.plot(errHist)
     plt.xlabel('iteration')
-    plt.ylabel('error')
+    plt.ylabel('| deviation |')
+    plt.axis([0, 3000000, 0, 1])
+
+    if success: plt.savefig('backpropTrend3.png',dpi=300)
