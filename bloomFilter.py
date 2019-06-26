@@ -13,7 +13,7 @@ class bloomFilter(object):
         # print("k = ",self.K)
         return
 
-    def mmhash(self,W,k):
+    def mmhash(self,W,k):  
         nn=W[0].shape[1]
         n=int(mt.sqrt(nn))
         p=W[0].shape[0]

@@ -5,6 +5,6 @@ scp *.py ve73yen@ppc801.mirz.uni-jena.de:~/
 for i in `seq 1 20`;
 do
   num=$(printf "%02d" $i)
-  toRun="ssh -t ve73yen@ppc8$num.mirz.uni-jena.de 'python3 differenceMap_Beta1_n3_V8.py'"
+  toRun="ssh -t ve73yen@ppc8$num.mirz.uni-jena.de 'python3 differenceMap_Beta1_n3_V13_2.py'"
   osascript -e "tell application \"Terminal\" to do script \"$toRun\""
 done

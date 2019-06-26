@@ -167,30 +167,35 @@ def roundInit(n,p):
     while True:
         i,j,err,matSel=findWeight(Wa,Wb,Wc,TA,TB,TC)
         if i<0: break
+        WaT=Wa.copy()
+        WbT=Wb.copy()
+        WcT=Wc.copy()
         if matSel==0:
             TA[i,j]=0
             MA[i,j]=0
-            Wa[i,j]=np.minimum(np.maximum(np.round(Wa[i,j]),-1),1)
+            WaT[i,j]=np.minimum(np.maximum(np.round(WaT[i,j]),-1),1)
         if matSel==1:
             TB[i,j]=0
             MB[i,j]=0
-            Wb[i,j]=np.minimum(np.maximum(np.round(Wb[i,j]),-1),1)
+            WbT[i,j]=np.minimum(np.maximum(np.round(WbT[i,j]),-1),1)
         if matSel==2:
             TC[i,j]=0
             MC[i,j]=0
-            Wc[i,j]=np.minimum(np.maximum(np.round(Wc[i,j]),-1),1)
-        WaT,WbT,WcT,eh,success=biM.findCalcRule(n,p,3000000,Wa.copy(),Wb.copy(),Wc.copy(),
+            WcT[i,j]=np.minimum(np.maximum(np.round(WcT[i,j]),-1),1)
+        WaT,WbT,WcT,eh,success=biM.findCalcRule(n,p,100000,WaT,WbT,WcT,
         MA,MB,MC,limit=0.01,nue=0.1)
         if success:
             Wa=WaT
             Wb=WbT
             Wc=WcT
             rounds+=1
+            print("o",end='',flush=True)
         else:
             if matSel==0: MA[i,j]=1
             if matSel==1: MB[i,j]=1
             if matSel==2: MC[i,j]=1
-    print("Rundungen: ",str(rounds))
+            print("x",end='',flush=True)
+    print("roundInit-Rundungen: ",str(rounds))
     return [Wa,Wb,Wc]
 
 def diffMap(id,mutex,success):
@@ -235,12 +240,6 @@ def diffMap(id,mutex,success):
                 cyclCnt=b
                 break
 
-        mutex.acquire()
-        if i%1==0:
-            print("---------------------------")
-            print("Prozess:",id)
-            print("Iter.:  ",i)
-            print("Delta:  ",norm2Delta)
         if norm2Delta<0.5:
             print("Lösung gefunden?")
             W1=PA(W.copy())#### muss nicht sein!
@@ -263,6 +262,13 @@ def diffMap(id,mutex,success):
                 diffs=[]
                 i=0
             else: print(".... keine gültige Lösung")
+
+        mutex.acquire()
+        if i%1==0:
+            print("---------------------------")
+            print("Prozess:",id)
+            print("Iter.:  ",i)
+            print("Delta:  ",norm2Delta)
         if cycle:
             print("**** Zyklus entdeckt! *****")
             print("**** cyclCnt: ",cyclCnt)

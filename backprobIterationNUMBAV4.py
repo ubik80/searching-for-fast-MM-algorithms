@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from numba import jit
 import time
 import sys
-import checkSolution as cs
+import checkSolution as cs   
 
 def findCalcRule(n,p,numIters,Wa,Wb,Wc,MA,MB,MC,limit=0.01,nue=0.1):
     nn=n**2
