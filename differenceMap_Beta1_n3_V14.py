@@ -25,7 +25,7 @@ def PB(W):
     WaRet=[]
     WbRet=[]
     WcRet=[]
-    for c in range(3):
+    for c in range(3): ### 3
         Wa=W[0].copy()
         Wb=W[1].copy()
         Wc=W[2].copy()
@@ -184,6 +184,40 @@ def roundInit(n,p):
     print("Rundungen: ",str(rounds))
     return [Wa,Wb,Wc]
 
+def roundStep(W):
+    Wa=W[0]
+    Wb=W[1]
+    Wc=W[2]
+    nn=Wa.shape[1]
+    p=Wa.shape[0]
+    n=int(np.sqrt(nn))
+    MA=np.ones(Wa.shape)
+    MB=np.ones(Wb.shape)
+    MC=np.ones(Wc.shape)
+    success=True
+    rounds=0
+    while success:
+        i,j,err,matSel=findWeight(Wa,Wb,Wc,MA,MB,MC)
+        if i<0: break
+        if matSel==0:
+            MA[i,j]=0
+            Wa[i,j]=np.minimum(np.maximum(np.round(Wa[i,j]),-1),1)
+        if matSel==1:
+            MB[i,j]=0
+            Wb[i,j]=np.minimum(np.maximum(np.round(Wb[i,j]),-1),1)
+        if matSel==2:
+            MC[i,j]=0
+            Wc[i,j]=np.minimum(np.maximum(np.round(Wc[i,j]),-1),1)
+        WaT,WbT,WcT,eh,success=biM.findCalcRule(n,p,3000000,Wa.copy(),Wb.copy(),Wc.copy(),
+        MA,MB,MC,limit=0.01,nue=0.1)
+        if success:
+            Wa=WaT
+            Wb=WbT
+            Wc=WcT
+        rounds+=1
+    print("Rundungen: ",str(rounds))
+    return [Wa,Wb,Wc]
+
 def diffMap(id,mutex,success):
     p=23
     n=3
@@ -212,9 +246,15 @@ def diffMap(id,mutex,success):
                 np.random.seed(seed%135745)
                 W=roundInit(n,p)
                 i=0
+
+        PBx=roundStep(PBx)
+
         PAy=PA([2.0*PBx[0]-W[0],2.0*PBx[1]-W[1],2.0*PBx[2]-W[2]])
         delta=[PAy[0]-PBx[0],PAy[1]-PBx[1],PAy[2]-PBx[2]]
         W=[W[0]+delta[0],W[1]+delta[1],W[2]+delta[2]]
+
+        W=roundStep(W)
+
         norm2Delta=np.linalg.norm(delta[0],2)**2+np.linalg.norm(delta[1],2)**2+np.linalg.norm(delta[2],2)**2
         norm2Delta=np.sqrt(norm2Delta)
 
@@ -245,7 +285,7 @@ def diffMap(id,mutex,success):
                     W=W2
                 print(str(c1),str(c2))
                 numOfIters=i
-                np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time()),[W[0],W[1],W[2],diffs,numOfIters,numOfCycles,numOfTries])
+                np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time())+"_"+"V14",[W[0],W[1],W[2],diffs,numOfIters,numOfCycles,numOfTries])
                 print(".... Lösung korrekt")
                 W=roundInit(n,p)
                 numOfCycles=0
@@ -258,7 +298,7 @@ def diffMap(id,mutex,success):
             print("**** Zyklus entdeckt! *****")
             print("**** cyclCnt: ",cyclCnt)
             numOfCycles+=1
-        if i>2000 and norm2Delta>3.0:
+        if i>200 and norm2Delta>2.0:
             print(i," cycles -> Reset")
             print("tries:",numOfTries)
         mutex.release()
@@ -267,7 +307,7 @@ def diffMap(id,mutex,success):
             W[0]+=(np.random.rand(p*nn).reshape([p,nn])*2.0-1.0)*0.05*cyclCnt
             W[1]+=(np.random.rand(p*nn).reshape([p,nn])*2.0-1.0)*0.05*cyclCnt
             W[2]+=(np.random.rand(p*nn).reshape([nn,p])*2.0-1.0)*0.05*cyclCnt
-        if i>2000 and norm2Delta>3.0:
+        if i>200 and norm2Delta>2.0:
             seed=int(time.time())+int(uuid.uuid4())+id
             np.random.seed(seed%135790)
             W=roundInit(n,p)

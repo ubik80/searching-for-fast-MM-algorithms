@@ -245,7 +245,7 @@ def diffMap(id,mutex,success):
                     W=W2
                 print(str(c1),str(c2))
                 numOfIters=i
-                np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time()),[W[0],W[1],W[2],diffs,numOfIters,numOfCycles,numOfTries])
+                np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time())+"_"+"V13",[W[0],W[1],W[2],diffs,numOfIters,numOfCycles,numOfTries])
                 print(".... Lösung korrekt")
                 W=roundInit(n,p)
                 numOfCycles=0
