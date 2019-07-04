@@ -46,7 +46,7 @@ def checkSolution(W):
     ret=fastLoop(n,nn,p,BIdx,c,Wa,Wb,Wc)
     return ret # checkSolution
 
-sol=np.load("solution_3_1756_11_V13_3.npy",allow_pickle=True)
+sol=np.load("solution_3_18_1561817108.4627235_V14.npy",allow_pickle=True)
 
 Wa=sol[0]
 Wb=sol[1]
@@ -59,13 +59,15 @@ nn=Wc.shape[0]
 p=Wc.shape[1]
 n=int(np.round(np.sqrt(nn)))
 
-diffs=sol[3]
-jumps=sol[4]
-heights=sol[5]
-numOfIters=sol[6]
-numOfCycles=sol[7]
-numOfTries=sol[8]
+jumpFactor=sol[3]
+diffs=sol[4]
+jumps=sol[5]
+heights=sol[6]
+numOfIters=sol[7]
+numOfCycles=sol[8]
+numOfTries=sol[9]
 print(numOfCycles)
+print(jumpFactor)
 maxY=np.max(diffs)-0.2
 minY=np.min(diffs)-0.2
 
@@ -79,4 +81,4 @@ for j in range(len(jumps)):
     plt.plot(x,y,'-r',alpha=0.5)
     plt.text(jumps[j]-20,maxY-0.2,heights[j])
 
-#plt.savefig('diffMap_1_V13_3.png',dpi=300)
+plt.savefig('example4.png',dpi=300)

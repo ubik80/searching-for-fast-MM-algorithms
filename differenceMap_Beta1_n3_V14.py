@@ -208,6 +208,9 @@ def diffMap(id,mutex):
     jumps=[] #indices of jumps
     heights=[] #multpliers (cyclCnt) of jumps
 
+    jumpFactor=0.0125
+    bloomOn=True
+
     while True:
         s=False
         while not s:
@@ -242,7 +245,7 @@ def diffMap(id,mutex):
             WW=PA(PB(W)[0]) #PA is overwriting, but PB is not
             c2=checkSolution(WW)
             if c2:
-                np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time())+"_"+"V13_5",[WW[0],WW[1],WW[2],diffs,jumps,heights,i,numOfCycles,numOfTries])
+                np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time())+"_"+"V14",[WW[0],WW[1],WW[2],jumpFactor,diffs,jumps,heights,i,numOfCycles,numOfTries,bloomOn])
                 print(".... Lösung korrekt")
                 W=roundInit(n,p)
                 BFs=[bf.bloomFilter(2*nn*p,0.00001) for b in range(20)]
@@ -268,10 +271,11 @@ def diffMap(id,mutex):
             print("tries:",numOfTries)
         mutex.release()
 
+        if cyclCnt>0 and bloomOn:
+            W[0]+=(np.random.rand(p*nn).reshape([p,nn])*2.0-1.0)*cyclCnt*jumpFactor
+            W[1]+=(np.random.rand(p*nn).reshape([p,nn])*2.0-1.0)*cyclCnt*jumpFactor
+            W[2]+=(np.random.rand(p*nn).reshape([nn,p])*2.0-1.0)*cyclCnt*jumpFactor
         if cyclCnt>0:
-            W[0]+=(np.random.rand(p*nn).reshape([p,nn])*2.0-1.0)*0.05*cyclCnt*0.5
-            W[1]+=(np.random.rand(p*nn).reshape([p,nn])*2.0-1.0)*0.05*cyclCnt*0.5
-            W[2]+=(np.random.rand(p*nn).reshape([nn,p])*2.0-1.0)*0.05*cyclCnt*0.5
             jumps.append(i)
             heights.append(cyclCnt)
             numOfCycles+=1
