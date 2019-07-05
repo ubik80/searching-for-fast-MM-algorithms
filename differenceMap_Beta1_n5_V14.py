@@ -1,5 +1,4 @@
 # coding: utf8
-#import os
 import numpy as np
 import backprobIteration_diffMap_NUMBAV4 as bi #unmasked
 import backprobIterationNUMBAV4 as biM #masked
@@ -83,28 +82,23 @@ def checkSolution(W):
     return ret # checkSolution
 
 @jit(nopython=True,nogil=True,cache=True)
-def rankWeight(i,j,Wa,Wb,Wc,baseDev,matSel=0):
+def rankWeight(i,j,Wa,Wb,Wc,baseDev,matSel,WaiWci,WbiWci,WajWbj,ei):
     nn=Wa.shape[1]
     p=Wa.shape[0]
     n=int(np.sqrt(nn))
-    if matSel==0:
-        delta=np.round(Wa[i,j])-Wa[i,j]
-        delta*=np.sum(Wb[i,:])
-        deltaVec=Wc[:,i]*delta
-    elif matSel==1:
-        delta=np.round(Wb[i,j])-Wb[i,j]
-        delta*=np.sum(Wa[i,:])
-        deltaVec=Wc[:,i]*delta
+    if matSel==0: deltaVec=(np.round(Wa[i,j])-Wa[i,j])*WbiWci[i]
+    elif matSel==1: deltaVec=(np.round(Wb[i,j])-Wb[i,j])*WaiWci[i]
     else:
-        delta=np.round(Wc[i,j])-Wc[i,j]
-        delta*=np.sum(Wa[j,:])*np.sum(Wb[j,:])
-        deltaVec=baseDev*0
-        deltaVec[i]+=delta
+        ei*=0.0
+        ei[i]=1.0
+        deltaVec=(np.round(Wc[i,j])-Wc[i,j])*WajWbj[j]*ei
     ret=np.linalg.norm(deltaVec+baseDev,2)
     return ret #rankWeight
 
+#rankWeight(0,0,Wa,Wb,Wc,baseDev,0,WaiWci,WbiWci,WajWbj,np.zeros(nn,dtype=float))
+
 @jit(nopython=True,nogil=True,cache=True)
-def findWeight(Wa,Wb,Wc,MA,MB,MC):
+def findWeight(Wa,Wb,Wc,MA,MB,MC,ei):
     nn=Wa.shape[1]
     p=Wa.shape[0]
     n=int(np.sqrt(nn))
@@ -115,10 +109,13 @@ def findWeight(Wa,Wb,Wc,MA,MB,MC):
     a=np.ones(nn)
     b=np.ones(nn)
     baseDev=Wc.dot(Wa.dot(a)*Wb.dot(b))-np.ones(nn)*n
+    WaiWci=[np.sum(Wa[i,:])*Wc[:,i] for i in range(p)]
+    WbiWci=[np.sum(Wb[i,:])*Wc[:,i] for i in range(p)]
+    WajWbj=[np.sum(Wa[j,:])*np.sum(Wb[j,:]) for j in range(p)]
     for i in range(p):
         for j in range(nn):
             if MA[i,j]==1:
-                err=rankWeight(i,j,Wa,Wb,Wc,baseDev,0)
+                err=rankWeight(i,j,Wa,Wb,Wc,baseDev,0,WaiWci,WbiWci,WajWbj,ei)
                 if err<bestErr:
                     bestErr=err
                     bestI=i
@@ -127,7 +124,7 @@ def findWeight(Wa,Wb,Wc,MA,MB,MC):
     for i in range(p):
         for j in range(nn):
             if MB[i,j]==1:
-                err=rankWeight(i,j,Wa,Wb,Wc,baseDev,1)
+                err=rankWeight(i,j,Wa,Wb,Wc,baseDev,1,WaiWci,WbiWci,WajWbj,ei)
                 if err<bestErr:
                     bestErr=err
                     bestI=i
@@ -136,7 +133,7 @@ def findWeight(Wa,Wb,Wc,MA,MB,MC):
     for i in range(nn):
         for j in range(p):
             if MC[i,j]==1:
-                err=rankWeight(i,j,Wa,Wb,Wc,baseDev,2)
+                err=rankWeight(i,j,Wa,Wb,Wc,baseDev,2,WaiWci,WbiWci,WajWbj,ei)
                 if err<bestErr:
                     bestErr=err
                     bestI=i
@@ -151,16 +148,17 @@ def roundInit(n,p):
         Wa=np.random.rand(p*nn).reshape([p,nn])*2.0-1.0
         Wb=np.random.rand(p*nn).reshape([p,nn])*2.0-1.0
         Wc=np.random.rand(nn*p).reshape([nn,p])*2.0-1.0
-        Wa,Wb,Wc,eh,success=bi.findCalcRule(n,p,3000000,Wa,Wb,Wc,limit=0.01,nue=0.1)
+        Wa,Wb,Wc,eh,success=bi.findCalcRule(n,p,30000000,Wa,Wb,Wc,limit=0.01,nue=0.1)
     MA=np.ones(Wa.shape)
     MB=np.ones(Wb.shape)
     MC=np.ones(Wc.shape)
     TA=np.ones(Wa.shape)
     TB=np.ones(Wb.shape)
     TC=np.ones(Wc.shape)
+    ei=np.zeros(nn,dtype=float)
     rounds=0
     while True:
-        i,j,err,matSel=findWeight(Wa,Wb,Wc,TA,TB,TC)
+        i,j,err,matSel=findWeight(Wa,Wb,Wc,TA,TB,TC,ei)
         if i<0: break
         WaT=Wa.copy()
         WbT=Wb.copy()
@@ -194,9 +192,11 @@ def roundInit(n,p):
     return [Wa,Wb,Wc] #roundInit
 
 def diffMap(id,mutex):
-    p=23
-    n=3
+    p=108 #99 entspricht 5**2.8540
+    n=5
     nn=int(n**2)
+
+    print("n: ",n," p: ",p)
 
     seed=int(time.time())+int(uuid.uuid4())+id
     np.random.seed(seed%135790)
@@ -208,6 +208,9 @@ def diffMap(id,mutex):
     diffs=[]
     jumps=[] #indices of jumps
     heights=[] #multpliers (cyclCnt) of jumps
+
+    jumpFactor=0.0125
+    bloomOn=True
 
     while True:
         s=False
@@ -243,7 +246,7 @@ def diffMap(id,mutex):
             WW=PA(PB(W)[0]) #PA is overwriting, but PB is not
             c2=checkSolution(WW)
             if c2:
-                np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time())+"_"+"V13_4",[WW[0],WW[1],WW[2],diffs,jumps,heights,i,numOfCycles,numOfTries])
+                np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time())+"_"+"V14",[WW[0],WW[1],WW[2],jumpFactor,diffs,jumps,heights,i,numOfCycles,numOfTries,bloomOn])
                 print(".... Lösung korrekt")
                 W=roundInit(n,p)
                 BFs=[bf.bloomFilter(2*nn*p,0.00001) for b in range(20)]
@@ -269,10 +272,11 @@ def diffMap(id,mutex):
             print("tries:",numOfTries)
         mutex.release()
 
+        if cyclCnt>0 and bloomOn:
+            W[0]+=(np.random.rand(p*nn).reshape([p,nn])*2.0-1.0)*cyclCnt*jumpFactor
+            W[1]+=(np.random.rand(p*nn).reshape([p,nn])*2.0-1.0)*cyclCnt*jumpFactor
+            W[2]+=(np.random.rand(p*nn).reshape([nn,p])*2.0-1.0)*cyclCnt*jumpFactor
         if cyclCnt>0:
-            W[0]+=(np.random.rand(p*nn).reshape([p,nn])*2.0-1.0)*0.05*cyclCnt*4
-            W[1]+=(np.random.rand(p*nn).reshape([p,nn])*2.0-1.0)*0.05*cyclCnt*4
-            W[2]+=(np.random.rand(p*nn).reshape([nn,p])*2.0-1.0)*0.05*cyclCnt*4
             jumps.append(i)
             heights.append(cyclCnt)
             numOfCycles+=1
@@ -299,11 +303,6 @@ if __name__ == '__main__':
 
     for pp in procs: pp.start()
     for pp in procs: pp.join()
-
-
-
-
-
 
 
 

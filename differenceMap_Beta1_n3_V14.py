@@ -209,7 +209,7 @@ def diffMap(id,mutex):
     heights=[] #multpliers (cyclCnt) of jumps
 
     jumpFactor=0.0125
-    bloomOn=True
+    bloomOn=False
 
     while True:
         s=False

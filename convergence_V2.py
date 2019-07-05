@@ -47,7 +47,7 @@ def checkSolution(W):
     ret=fastLoop(n,nn,p,BIdx,c,Wa,Wb,Wc)
     return ret # checkSolution
 
-os.chdir("/Users/tillspaeth/Google Drive/V14")
+os.chdir("/Users/tillspaeth/Google Drive/V14DiffMap")
 fileNames=os.listdir()
 TfileNames=[]
 for f in fileNames:
