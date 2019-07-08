@@ -1,5 +1,4 @@
 # coding: utf8
-#import os
 import numpy as np
 import backprobIteration_diffMap_NUMBAV4 as bi #unmasked
 import backprobIterationNUMBAV4 as biM #masked
