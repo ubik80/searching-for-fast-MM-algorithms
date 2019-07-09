@@ -173,7 +173,7 @@ def roundInit(n,p):
             MC[i,j]=0
             WcT[i,j]=np.minimum(np.maximum(np.round(WcT[i,j]),-1),1)
         success=biM.backpropM(WaT,WbT,WcT,MA,MB,MC,100000)
-        if success<0:
+        if success>0:
             Wa=WaT
             Wb=WbT
             Wc=WcT
@@ -203,7 +203,7 @@ def diffMap(id,mutex):
     jumps=[] #indices of jumps
     heights=[] #multpliers (cyclCnt) of jumps
 
-    jumpFactor=0.0125*0.5
+    jumpFactor=0.0125
     bloomOn=True
 
     while True:
@@ -253,13 +253,13 @@ def diffMap(id,mutex):
             else: print(".... keine gültige Lösung")
 
         mutex.acquire()
-        if i%1==0:
+        if i%100==0:
             print("---------------------------")
             print("Prozess:",id)
             print("Iter.:  ",i)
             print("Delta:  ",norm2Delta)
         if cyclCnt>0:
-            print("**** Zyklus entdeckt! *****")
+            #print("**** Zyklus entdeckt! *****")
             print("**** cyclCnt: ",cyclCnt)
         if i>2000 and norm2Delta>3.0:
             print(i," cycles -> Reset")

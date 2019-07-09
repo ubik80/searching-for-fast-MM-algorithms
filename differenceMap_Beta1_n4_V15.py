@@ -1,7 +1,6 @@
 # coding: utf8
 import numpy as np
-import backprobIteration_diffMap_NUMBAV4 as bi #unmasked
-import backprobIterationNUMBAV4 as biM #masked
+import backprop as biM
 import bloomFilter as bf
 import multiprocessing as mp
 import time
@@ -28,8 +27,8 @@ def PB(W): #copy / not overwriting
         Wa=W[0].copy()
         Wb=W[1].copy()
         Wc=W[2].copy()
-        Wa,Wb,Wc,eh,success=bi.findCalcRule(n,p,10000000,Wa,Wb,Wc,limit=0.01,nue=0.1)
-        if success:
+        success=biM.backprop(Wa,Wb,Wc,30000000)
+        if success>0:
             dist=np.linalg.norm(Wa-W[0],2)**2+np.linalg.norm(Wb-W[1],2)**2+np.linalg.norm(Wc-W[2],2)**2
             if dist<minDist:
                 solFound=True
@@ -95,8 +94,6 @@ def rankWeight(i,j,Wa,Wb,Wc,baseDev,matSel,WaiWci,WbiWci,WajWbj,ei):
     ret=np.linalg.norm(deltaVec+baseDev,2)
     return ret #rankWeight
 
-#rankWeight(0,0,Wa,Wb,Wc,baseDev,0,WaiWci,WbiWci,WajWbj,np.zeros(nn,dtype=float))
-
 @jit(nopython=True,nogil=True,cache=True)
 def findWeight(Wa,Wb,Wc,MA,MB,MC,ei):
     nn=Wa.shape[1]
@@ -143,12 +140,12 @@ def findWeight(Wa,Wb,Wc,MA,MB,MC,ei):
 
 def roundInit(n,p):
     nn=int(n**2)
-    success=False
-    while not success:
+    success=-1
+    while success<0:
         Wa=np.random.rand(p*nn).reshape([p,nn])*2.0-1.0
         Wb=np.random.rand(p*nn).reshape([p,nn])*2.0-1.0
         Wc=np.random.rand(nn*p).reshape([nn,p])*2.0-1.0
-        Wa,Wb,Wc,eh,success=bi.findCalcRule(n,p,30000000,Wa,Wb,Wc,limit=0.01,nue=0.1)
+        success=biM.backprop(Wa,Wb,Wc,30000000)
     MA=np.ones(Wa.shape)
     MB=np.ones(Wb.shape)
     MC=np.ones(Wc.shape)
@@ -175,33 +172,29 @@ def roundInit(n,p):
             TC[i,j]=0
             MC[i,j]=0
             WcT[i,j]=np.minimum(np.maximum(np.round(WcT[i,j]),-1),1)
-        WaT,WbT,WcT,eh,success=biM.findCalcRule(n,p,1000000,WaT,WbT,WcT,
-        MA,MB,MC,limit=0.01,nue=0.1)
-        if success:
+        success=biM.backpropM(WaT,WbT,WcT,MA,MB,MC,1000000)
+        if success>0:
             Wa=WaT
             Wb=WbT
             Wc=WcT
             rounds+=1
-            print("o",end='',flush=True)
+            #print("o",end='',flush=True)
         else:
             if matSel==0: MA[i,j]=1
             if matSel==1: MB[i,j]=1
             if matSel==2: MC[i,j]=1
-            print("x",end='',flush=True)
+            #print("x",end='',flush=True)
     print("roundInit-Rundungen: ",str(rounds))
     return [Wa,Wb,Wc] #roundInit
 
 def diffMap(id,mutex):
-    p=107 #99 entspricht 5**2.8540 # 107 geht
-    n=5
+    p=49
+    n=4
     nn=int(n**2)
-
-    print("n: ",n," p: ",p)
 
     seed=int(time.time())+int(uuid.uuid4())+id
     np.random.seed(seed%135790)
     W=roundInit(n,p)
-    np.save("roundInit_"+str(n)+"_"+str(p),W)
     BFs=[bf.bloomFilter(2*nn*p,0.00001) for b in range(20)]
     i=0 #iteration
     numOfCycles=0
@@ -247,7 +240,7 @@ def diffMap(id,mutex):
             WW=PA(PB(W)[0]) #PA is overwriting, but PB is not
             c2=checkSolution(WW)
             if c2:
-                np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time())+"_"+"V14",[WW[0],WW[1],WW[2],jumpFactor,diffs,jumps,heights,i,numOfCycles,numOfTries,bloomOn])
+                np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time())+"_"+"V15",[WW[0],WW[1],WW[2],jumpFactor,diffs,jumps,heights,i,numOfCycles,numOfTries,bloomOn])
                 print(".... Lösung korrekt")
                 W=roundInit(n,p)
                 BFs=[bf.bloomFilter(2*nn*p,0.00001) for b in range(20)]
@@ -260,13 +253,13 @@ def diffMap(id,mutex):
             else: print(".... keine gültige Lösung")
 
         mutex.acquire()
-        if i%1==0:
+        if i%100==0:
             print("---------------------------")
             print("Prozess:",id)
             print("Iter.:  ",i)
             print("Delta:  ",norm2Delta)
         if cyclCnt>0:
-            print("**** Zyklus entdeckt! *****")
+            #print("**** Zyklus entdeckt! *****")
             print("**** cyclCnt: ",cyclCnt)
         if i>2000 and norm2Delta>3.0:
             print(i," cycles -> Reset")
