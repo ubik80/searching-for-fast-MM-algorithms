@@ -71,41 +71,37 @@ i = 0
 for f in fileNames:
     i += 1
     sol = np.load(f, allow_pickle=True)
-    if len(sol) >= 10:
-        Wa = sol[0]
-        Wb = sol[1]
-        Wc = sol[2]
-        if not checkSolution([Wa, Wb, Wc]):
-            print("Lösung nicht korrekt !!!!")
-            exit()
-        jumpFactor = sol[3]
-        diffs = sol[4]
-        jumps = sol[5]
-        heights = sol[6]
-        numOfIters = sol[7]
-        numOfCycles = sol[8]
-        numOfTries = sol[9]
-        if len(sol) == 11:
-            bloomOn = sol[10]
-        else:
-            bloomOn = True
+    Wa = sol[0]
+    Wb = sol[1]
+    Wc = sol[2]
+    if not checkSolution([Wa, Wb, Wc]):
+        print("Lösung nicht korrekt !!!!")
+        exit()
+    jumpFactor = sol[3]
+    diffs = sol[4]
+    jumps = sol[5]
+    heights = sol[6]
+    numOfIters = sol[7]
+    numOfCycles = sol[8]
+    numOfTries = sol[9]
+    bloomOn = sol[10]
 
-        if numOfCycles > 1:
-            if bloomOn:
-                if str(jumpFactor) in itersWithFactor:
-                    itersWithFactor[str(jumpFactor)] += numOfIters
-                    numbWithFactor[str(jumpFactor)] += 1
-                else:  # new
-                    itersWithFactor[str(jumpFactor)] = numOfIters
-                    numbWithFactor[str(jumpFactor)] = 1
-                # if jumpFactor==0.0125:
-                blmOnCnt += 1
-                itersWithBF += numOfIters
-                triesWithBF += numOfTries
-            else:  # not bloomOn
-                blmOffCnt += 1
-                itersWOBF += numOfIters
-                triesWOBF += numOfTries
+    if numOfCycles > 1:
+        # if bloomOn and jumpFactor==0.0125:
+        if bloomOn:
+            blmOnCnt += 1
+            itersWithBF += numOfIters
+            triesWithBF += numOfTries
+            if str(jumpFactor) in itersWithFactor:
+                itersWithFactor[str(jumpFactor)] += numOfIters
+                numbWithFactor[str(jumpFactor)] += 1
+            else:  # new
+                itersWithFactor[str(jumpFactor)] = numOfIters
+                numbWithFactor[str(jumpFactor)] = 1
+        elif not bloomOn:  # not bloomOn
+            blmOffCnt += 1
+            itersWOBF += numOfIters
+            triesWOBF += numOfTries
 
         # print("filename: ",f)
         # print("bloomFilter on: ",bloomOn)
@@ -114,23 +110,25 @@ for f in fileNames:
         # print("tries: ",numOfTries)
         # print("numOfCycles: ",numOfCycles)
         # print("-------------------------")
-        #
-        # maxY=np.max(diffs)-0.2
-        # minY=np.min(diffs)-0.2
+
+        # maxY = np.max(diffs)-0.2
+        # minY = np.min(diffs)-0.2
         # plt.rcParams.update({'font.size': 10})
         # plt.plot(diffs)
         # plt.xlabel("iteration")
         # plt.ylabel("| Δ |")
-        # y=[minY,maxY]
+        # y = [minY, maxY]
         # for j in range(len(jumps)):
-        #     x=[jumps[j],jumps[j]]
-        #     plt.plot(x,y,'-r',alpha=0.5)
-        #     plt.text(jumps[j]-20,maxY-0.2,heights[j])
-        # if bloomOn: ttl=str(jumpFactor)
-        # else: ttl='no cycl. det.'
+        #     x = [jumps[j], jumps[j]]
+        #     plt.plot(x, y, '-r', alpha=0.5)
+        #     plt.text(jumps[j]-20, maxY-0.2, heights[j])
+        # if bloomOn:
+        #     ttl = str(jumpFactor)
+        # else:
+        #     ttl = 'no cycl. det.'
         # plt.title(ttl)
-        # picName='example_'+str(i)+'.png'
-        # #plt.savefig(picName,dpi=300)
+        # picName = 'example_'+str(i)+'.png'
+        # # plt.savefig(picName,dpi=300)
         # plt.close()
 
 print("# with BF: ", blmOnCnt)
@@ -143,4 +141,3 @@ print("# tries WO BF: ", triesWOBF/blmOffCnt)
 for n in numbWithFactor:
     print("factor ", n, ", samples: ",
           numbWithFactor[n], ", avg. #iters: ", itersWithFactor[n]/numbWithFactor[n])
-    pass

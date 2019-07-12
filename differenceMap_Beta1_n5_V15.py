@@ -29,7 +29,7 @@ def PB(W):  # copy / not overwriting
         Wa = W[0].copy()
         Wb = W[1].copy()
         Wc = W[2].copy()
-        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1)
+        success = biM.backprop(Wa, Wb, Wc, 30000000)
         if success > 0:
             dist = np.linalg.norm(Wa-W[0], 2)**2+np.linalg.norm(Wb-W[1],
                                                                 2)**2+np.linalg.norm(Wc-W[2], 2)**2
@@ -151,12 +151,15 @@ def findWeight(Wa, Wb, Wc, MA, MB, MC, ei):
 
 def roundInit(n, p):
     nn = int(n**2)
-    success = -1
-    while success < 0:
-        Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
-        Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
-        Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
-        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1)
+    # success=-1
+    # while success<0:
+    #     Wa=np.random.rand(p*nn).reshape([p,nn])*2.0-1.0
+    #     Wb=np.random.rand(p*nn).reshape([p,nn])*2.0-1.0
+    #     Wc=np.random.rand(nn*p).reshape([nn,p])*2.0-1.0
+    #     success=biM.backprop(Wa,Wb,Wc,30000000)
+    Wa, Wb, Wc = np.load("startValues_5_105_1.npy", allow_pickle=True)
+    print("start values loaded")
+    #print("real numb. sol. found")
     MA = np.ones(Wa.shape)
     MB = np.ones(Wb.shape)
     MC = np.ones(Wc.shape)
@@ -165,7 +168,9 @@ def roundInit(n, p):
     TC = np.ones(Wc.shape)
     ei = np.zeros(nn, dtype=float)
     rounds = 0
+    iter = 0
     while True:
+        iter += 1
         i, j, err, matSel = findWeight(Wa, Wb, Wc, TA, TB, TC, ei)
         if i < 0:
             break
@@ -184,13 +189,13 @@ def roundInit(n, p):
             TC[i, j] = 0
             MC[i, j] = 0
             WcT[i, j] = np.minimum(np.maximum(np.round(WcT[i, j]), -1), 1)
-        success = biM.backpropM(WaT, WbT, WcT, MA, MB, MC, 100000, 0.1)
+        success = biM.backpropM(WaT, WbT, WcT, MA, MB, MC, 1000000)
         if success > 0:
             Wa = WaT
             Wb = WbT
             Wc = WcT
             rounds += 1
-            # print("o",end='',flush=True)
+            print("o", end='', flush=True)
         else:
             if matSel == 0:
                 MA[i, j] = 1
@@ -198,14 +203,17 @@ def roundInit(n, p):
                 MB[i, j] = 1
             if matSel == 2:
                 MC[i, j] = 1
-            # print("x",end='',flush=True)
+            print("x", end='', flush=True)
+        if iter % 100 == 0:
+            np.save("roundedStartValues_5_105_temp", [Wa, Wb, Wc, TA, TB, TC])
     print("roundInit-Rundungen: ", str(rounds))
+    np.save("roundedStartValues_5_105", [Wa, Wb, Wc])
     return [Wa, Wb, Wc]  # roundInit
 
 
 def diffMap(id, mutex):
-    p = 23
-    n = 3
+    p = 105
+    n = 5
     nn = int(n**2)
 
     seed = int(time.time())+int(uuid.uuid4())+id
@@ -231,6 +239,7 @@ def diffMap(id, mutex):
                 seed = int(time.time())+int(uuid.uuid4())+id
                 np.random.seed(seed % 135745)
                 W = roundInit(n, p)
+                BFs = [bf.bloomFilter(2*nn*p, 0.00001) for b in range(20)]
                 i = 0
                 numOfCycles = 0
                 numOfTries += 1
@@ -309,7 +318,7 @@ def diffMap(id, mutex):
 
 
 if __name__ == '__main__':
-    numOfProc = int(mp.cpu_count())
+    numOfProc = int(mp.cpu_count())*0+1
     print("Anzahl Prozessoren: ", numOfProc)
 
     mutex = mp.Lock()
