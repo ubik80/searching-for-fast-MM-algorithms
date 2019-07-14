@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numba import jit
 import os
+import backprop as biM
 np.set_printoptions(precision=2, suppress=True)
 
 
@@ -103,3 +104,30 @@ for f in fileNames:
 # c = Wc.dot(Wa.dot(a)*Wb.dot(b))
 #
 # c
+
+np.set_printoptions(precision=2, suppress=True)
+
+sol = np.load(
+    "roundedStartValues_5_105_temp.npy", allow_pickle=True)
+Wa = sol[0]
+Wb = sol[1]
+Wc = sol[2]
+
+np.max(Wc)
+np.min(Wc)
+
+min = -1.0
+max = -min
+
+Wa = np.minimum(np.maximum(Wa, min), max)
+Wb = np.minimum(np.maximum(Wb, min), max)
+Wc = np.minimum(np.maximum(Wc, min), max)
+
+for i in range(10):
+    success = biM.backprop(Wa, Wb, Wc, 3000000, 0.01)
+print(success)
+
+MAB = np.ones(Wa.shape)
+MC = np.ones(Wc.shape)
+np.save("roundedStartValues_5_105_temp", [Wa, Wb, Wc, MAB, MAB, MC, MAB, MAB, MC])
+#

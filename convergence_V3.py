@@ -87,8 +87,7 @@ for f in fileNames:
     bloomOn = sol[10]
 
     if numOfCycles > 1:
-        # if bloomOn and jumpFactor==0.0125:
-        if bloomOn:
+        if bloomOn:  # and jumpFactor == 0.0125:
             blmOnCnt += 1
             itersWithBF += numOfIters
             triesWithBF += numOfTries

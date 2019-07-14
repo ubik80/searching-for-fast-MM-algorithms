@@ -29,7 +29,7 @@ def PB(W):  # copy / not overwriting
         Wa = W[0].copy()
         Wb = W[1].copy()
         Wc = W[2].copy()
-        success = biM.backprop(Wa, Wb, Wc, 30000000)
+        success = biM.backprop(Wa, Wb, Wc, 30000000, 0.1)
         if success > 0:
             dist = np.linalg.norm(Wa-W[0], 2)**2+np.linalg.norm(Wb-W[1],
                                                                 2)**2+np.linalg.norm(Wc-W[2], 2)**2
@@ -156,16 +156,20 @@ def roundInit(n, p):
     #     Wa=np.random.rand(p*nn).reshape([p,nn])*2.0-1.0
     #     Wb=np.random.rand(p*nn).reshape([p,nn])*2.0-1.0
     #     Wc=np.random.rand(nn*p).reshape([nn,p])*2.0-1.0
-    #     success=biM.backprop(Wa,Wb,Wc,30000000)
-    Wa, Wb, Wc = np.load("startValues_5_105_1.npy", allow_pickle=True)
+    #     success=biM.backprop(Wa,Wb,Wc,30000000,0.1)
+    Wa, Wb, Wc, MA, MB, MC, TA, TB, TC = np.load(
+        "roundedStartValues_5_105_temp.npy", allow_pickle=True)
+    TA = MA.copy()
+    TB = MB.copy()
+    TC = MC.copy()
     print("start values loaded")
     #print("real numb. sol. found")
-    MA = np.ones(Wa.shape)
-    MB = np.ones(Wb.shape)
-    MC = np.ones(Wc.shape)
-    TA = np.ones(Wa.shape)
-    TB = np.ones(Wb.shape)
-    TC = np.ones(Wc.shape)
+    # MA = np.ones(Wa.shape)
+    # MB = np.ones(Wb.shape)
+    # MC = np.ones(Wc.shape)
+    # TA = np.ones(Wa.shape)
+    # TB = np.ones(Wb.shape)
+    # TC = np.ones(Wc.shape)
     ei = np.zeros(nn, dtype=float)
     rounds = 0
     iter = 0
@@ -180,22 +184,29 @@ def roundInit(n, p):
         if matSel == 0:
             TA[i, j] = 0
             MA[i, j] = 0
+            oldVal = WaT[i, j]
             WaT[i, j] = np.minimum(np.maximum(np.round(WaT[i, j]), -1), 1)
+            newVal = WaT[i, j]
         if matSel == 1:
             TB[i, j] = 0
             MB[i, j] = 0
+            oldVal = WbT[i, j]
             WbT[i, j] = np.minimum(np.maximum(np.round(WbT[i, j]), -1), 1)
+            newVal = WbT[i, j]
         if matSel == 2:
             TC[i, j] = 0
             MC[i, j] = 0
+            oldVal = WcT[i, j]
             WcT[i, j] = np.minimum(np.maximum(np.round(WcT[i, j]), -1), 1)
-        success = biM.backpropM(WaT, WbT, WcT, MA, MB, MC, 1000000)
+            newVal = WcT[i, j]
+        success = biM.backpropM(WaT, WbT, WcT, MA, MB, MC, 3000000, 0.01)
         if success > 0:
             Wa = WaT
             Wb = WbT
             Wc = WcT
             rounds += 1
-            print("o", end='', flush=True)
+            #print("o", end='', flush=True)
+            print(str(oldVal)+" -> "+str(newVal))
         else:
             if matSel == 0:
                 MA[i, j] = 1
@@ -203,9 +214,11 @@ def roundInit(n, p):
                 MB[i, j] = 1
             if matSel == 2:
                 MC[i, j] = 1
-            print("x", end='', flush=True)
+            #print("x", end='', flush=True)
+            print(str(oldVal)+" failed")
         if iter % 100 == 0:
-            np.save("roundedStartValues_5_105_temp", [Wa, Wb, Wc, TA, TB, TC])
+            np.save("roundedStartValues_5_105_temp", [Wa, Wb, Wc, MA, MB, MC, TA, TB, TC])
+            print("... gespeichert")
     print("roundInit-Rundungen: ", str(rounds))
     np.save("roundedStartValues_5_105", [Wa, Wb, Wc])
     return [Wa, Wb, Wc]  # roundInit

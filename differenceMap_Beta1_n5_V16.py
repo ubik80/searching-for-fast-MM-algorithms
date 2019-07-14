@@ -25,11 +25,11 @@ def PB(W):  # copy / not overwriting
     WaRet = []
     WbRet = []
     WcRet = []
-    for tries in range(3):
+    for tries in range(5):
         Wa = W[0].copy()
         Wb = W[1].copy()
         Wc = W[2].copy()
-        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1)
+        success = biM.backprop(Wa, Wb, Wc, 30000000, 0.1)
         if success > 0:
             dist = np.linalg.norm(Wa-W[0], 2)**2+np.linalg.norm(Wb-W[1],
                                                                 2)**2+np.linalg.norm(Wc-W[2], 2)**2
@@ -150,62 +150,15 @@ def findWeight(Wa, Wb, Wc, MA, MB, MC, ei):
 
 
 def roundInit(n, p):
-    nn = int(n**2)
-    success = -1
-    while success < 0:
-        Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
-        Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
-        Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
-        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1)
-    MA = np.ones(Wa.shape)
-    MB = np.ones(Wb.shape)
-    MC = np.ones(Wc.shape)
-    TA = np.ones(Wa.shape)
-    TB = np.ones(Wb.shape)
-    TC = np.ones(Wc.shape)
-    ei = np.zeros(nn, dtype=float)
-    rounds = 0
-    while True:
-        i, j, err, matSel = findWeight(Wa, Wb, Wc, TA, TB, TC, ei)
-        if i < 0:
-            break
-        WaT = Wa.copy()
-        WbT = Wb.copy()
-        WcT = Wc.copy()
-        if matSel == 0:
-            TA[i, j] = 0
-            MA[i, j] = 0
-            WaT[i, j] = np.minimum(np.maximum(np.round(WaT[i, j]), -1), 1)
-        if matSel == 1:
-            TB[i, j] = 0
-            MB[i, j] = 0
-            WbT[i, j] = np.minimum(np.maximum(np.round(WbT[i, j]), -1), 1)
-        if matSel == 2:
-            TC[i, j] = 0
-            MC[i, j] = 0
-            WcT[i, j] = np.minimum(np.maximum(np.round(WcT[i, j]), -1), 1)
-        success = biM.backpropM(WaT, WbT, WcT, MA, MB, MC, 100000, 0.1)
-        if success > 0:
-            Wa = WaT
-            Wb = WbT
-            Wc = WcT
-            rounds += 1
-            # print("o",end='',flush=True)
-        else:
-            if matSel == 0:
-                MA[i, j] = 1
-            if matSel == 1:
-                MB[i, j] = 1
-            if matSel == 2:
-                MC[i, j] = 1
-            # print("x",end='',flush=True)
-    print("roundInit-Rundungen: ", str(rounds))
+    Wa, Wb, Wc, MA, MB, MC, TA, TB, TC = np.load(
+        "roundedStartValues_5_105_temp.npy", allow_pickle=True)
+    print("start values loaded")
     return [Wa, Wb, Wc]  # roundInit
 
 
 def diffMap(id, mutex):
-    p = 23
-    n = 3
+    p = 105
+    n = 5
     nn = int(n**2)
 
     seed = int(time.time())+int(uuid.uuid4())+id
@@ -219,7 +172,7 @@ def diffMap(id, mutex):
     jumps = []  # indices of jumps
     heights = []  # multpliers (cyclCnt) of jumps
 
-    jumpFactor = 0.009375
+    jumpFactor = 0.0125
     bloomOn = True
 
     while True:
@@ -231,6 +184,7 @@ def diffMap(id, mutex):
                 seed = int(time.time())+int(uuid.uuid4())+id
                 np.random.seed(seed % 135745)
                 W = roundInit(n, p)
+                BFs = [bf.bloomFilter(2*nn*p, 0.00001) for b in range(20)]
                 i = 0
                 numOfCycles = 0
                 numOfTries += 1
@@ -257,7 +211,7 @@ def diffMap(id, mutex):
             WW = PA(PB(W)[0])  # PA is overwriting, but PB is not
             c2 = checkSolution(WW)
             if c2:
-                np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time())+"_"+"V15",
+                np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time())+"_"+"V16",
                         [WW[0], WW[1], WW[2], jumpFactor, diffs, jumps, heights, i, numOfCycles, numOfTries, bloomOn])
                 print(".... Lösung korrekt")
                 W = roundInit(n, p)
@@ -272,7 +226,7 @@ def diffMap(id, mutex):
                 print(".... keine gültige Lösung")
 
         mutex.acquire()
-        if i % 100 == 0:
+        if i % 1 == 0:
             print("---------------------------")
             print("Prozess:", id)
             print("Iter.:  ", i)
@@ -280,7 +234,7 @@ def diffMap(id, mutex):
         if cyclCnt > 0:
             #print("**** Zyklus entdeckt! *****")
             print("**** cyclCnt: ", cyclCnt)
-        if i > 2000 and norm2Delta > 3.0:
+        if i > 20000 and norm2Delta > 3.0:
             print(i, " cycles -> Reset")
             print("tries:", numOfTries)
         mutex.release()
@@ -293,7 +247,7 @@ def diffMap(id, mutex):
             jumps.append(i)
             heights.append(cyclCnt)
             numOfCycles += 1
-        if i > 2000 and norm2Delta > 3.0:
+        if i > 20000 and norm2Delta > 3.0:
             seed = int(time.time())+int(uuid.uuid4())+id
             np.random.seed(seed % 135790)
             W = roundInit(n, p)
@@ -309,7 +263,7 @@ def diffMap(id, mutex):
 
 
 if __name__ == '__main__':
-    numOfProc = int(mp.cpu_count())
+    numOfProc = int(mp.cpu_count())*0+4
     print("Anzahl Prozessoren: ", numOfProc)
 
     mutex = mp.Lock()
