@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numba import jit
 import os
-np.set_printoptions(precision=2, suppress=True)
 
 
 def checkSolution(W):
@@ -51,6 +50,20 @@ def checkSolution(W):
     return ret  # checkSolution
 
 
+def bootStrapStats(_vals):
+    vals = np.array(_vals)
+    n = len(vals)
+    k = 10000
+    means = np.zeros(k, dtype=float)
+    for i in range(k):
+        draws = np.random.randint(0, n, n)
+        means[i] = np.mean(vals[draws])
+    means = np.sort(means)
+    CIlower = means[int(round(k*0.025))]
+    CIupper = means[int(round(k*0.975))]
+    return np.mean(means), CIlower, CIupper
+
+
 os.chdir("/Users/tillspaeth/Google Drive/V15DiffMap")
 fileNames = os.listdir()
 TfileNames = []
@@ -65,8 +78,12 @@ itersWithBF = 0
 itersWOBF = 0
 triesWithBF = 0
 triesWOBF = 0
+itersWOBFAll = []
 itersWithFactor = dict()
+triesWithFactor = dict()
 numbWithFactor = dict()
+itersWithFactorAll = dict()
+triesWithFactorAll = dict()
 i = 0
 for f in fileNames:
     i += 1
@@ -93,14 +110,21 @@ for f in fileNames:
             triesWithBF += numOfTries
             if str(jumpFactor) in itersWithFactor:
                 itersWithFactor[str(jumpFactor)] += numOfIters
+                triesWithFactor[str(jumpFactor)] += numOfTries
                 numbWithFactor[str(jumpFactor)] += 1
+                itersWithFactorAll[str(jumpFactor)].append(numOfIters)
+                triesWithFactorAll[str(jumpFactor)].append(numOfTries)
             else:  # new
                 itersWithFactor[str(jumpFactor)] = numOfIters
+                triesWithFactor[str(jumpFactor)] = numOfTries
                 numbWithFactor[str(jumpFactor)] = 1
+                itersWithFactorAll[str(jumpFactor)] = [numOfIters]
+                triesWithFactorAll[str(jumpFactor)] = [numOfTries]
         elif not bloomOn:  # not bloomOn
             blmOffCnt += 1
             itersWOBF += numOfIters
             triesWOBF += numOfTries
+            itersWOBFAll.append(numOfIters)
 
         # print("filename: ",f)
         # print("bloomFilter on: ",bloomOn)
@@ -134,9 +158,58 @@ print("# with BF: ", blmOnCnt)
 print("# w/o BF: ", blmOffCnt)
 print("# iters with BF: ", itersWithBF/blmOnCnt)
 print("# iters WO BF: ", itersWOBF/blmOffCnt)
+m, l, u = bootStrapStats(itersWOBFAll)
+print("    bootstrap: ", m, l, u)
 print("# tries with BF: ", triesWithBF/blmOnCnt)
 print("# tries WO BF: ", triesWOBF/blmOffCnt)
 
+
 for n in numbWithFactor:
     print("factor ", n, ", samples: ",
-          numbWithFactor[n], ", avg. #iters: ", itersWithFactor[n]/numbWithFactor[n])
+          numbWithFactor[n], ", avg. #iters: ", round(itersWithFactor[n]/numbWithFactor[n], 1))
+    m, l, u = bootStrapStats(itersWithFactorAll[n])
+    print("                                   bootstrap: ",
+          round(m, 1), round(l, 1), round(u, 1))
+    print("                                 avg. #tries: ",
+          round(triesWithFactor[n]/numbWithFactor[n], 1))
+
+os.chdir("/Users/tillspaeth/Desktop/Masterarbeit/searching-for-fast-MM-algorithms")
+x = []
+l = []
+u = []
+m = []
+for f in itersWithFactor:
+    x.append(float(f))
+    mm, ll, uu = bootStrapStats(itersWithFactorAll[f])
+    l.append(ll)
+    u.append(uu)
+    m.append(mm)
+s = np.argsort(np.array(x))
+plt.plot(np.array(x)[s], np.array(m)[s], '-o')
+plt.plot(np.array(x)[s], np.array(l)[s], '-o')
+plt.plot(np.array(x)[s], np.array(u)[s], '-o')
+#plt.plot([0.00625, 0.025], [8209.4677, 8209.4677])
+plt.xticks(np.array(x)[s])
+
+x = []
+l = []
+u = []
+m = []
+for f in itersWithFactor:
+    x.append(float(f))
+    mm, ll, uu = bootStrapStats(triesWithFactorAll[f])
+    l.append(ll)
+    u.append(uu)
+    m.append(mm)
+s = np.argsort(np.array(x))
+plt.plot(np.array(x)[s], np.array(m)[s], '-o')
+plt.plot(np.array(x)[s], np.array(l)[s], '-o')
+plt.plot(np.array(x)[s], np.array(u)[s], '-o')
+plt.plot([0.00625, 0.025], [9.6159, 9.6159])
+plt.xticks(np.array(x)[s])
+
+plt.xlabel("factor")
+plt.ylabel("avg. num. iterations")
+plt.savefig('factorItersGraph.png', dpi=300)
+
+facts = [0.00625/2*i for i in range(2, 9)]

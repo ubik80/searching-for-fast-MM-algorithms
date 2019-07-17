@@ -106,15 +106,12 @@ def intSolutionSearch(n, p, maxTries, maxNumIters, tol,
     np.random.seed(seed)
     nn = int(n**2)
     ei = np.zeros(nn, dtype=float)
-    success = -1
-    while success < 0:
-        Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
-        Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
-        Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
-        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1)
-    MA = np.ones(Wa.shape)
-    MB = np.ones(Wb.shape)
-    MC = np.ones(Wc.shape)
+
+    Wa, Wb, Wc, MA, MB, MC = np.load("solution_n5_temp_7600.0.npy", allow_pickle=True)
+
+    # MA = np.ones(Wa.shape)
+    # MB = np.ones(Wb.shape)
+    # MC = np.ones(Wc.shape)
     iterFact = 1
 
     mutex.acquire()
@@ -140,7 +137,7 @@ def intSolutionSearch(n, p, maxTries, maxNumIters, tol,
             MC[i, j] = 0.0
             Wc[i, j] = float(min(max(round(Wc[i, j]), -1.0), 1.0))
 
-        success = biM.backpropM(Wa, Wb, Wc, MA, MB, MC, maxNumIters*iterFact, 0.1)
+        success = biM.backpropM(Wa, Wb, Wc, MA, MB, MC, maxNumIters*iterFact, 0.01)
         iterFact = 1
 
         if not success:
@@ -186,6 +183,8 @@ def intSolutionSearch(n, p, maxTries, maxNumIters, tol,
                 np.copyto(bestMC_np, MC)
                 numOfMltpls = np.sum(bestMA_np)+np.sum(bestMB_np)+np.sum(bestMC_np)
                 oldBest = numOfMltpls
+                if numOfMltpls % 100 == 0:
+                    np.save("solution_n5_temp_"+str(int(numOfMltpls)), [Wa, Wb, Wc, MA, MB, MC])
         if np.sum(np.isnan(Wa)) > 0 or np.sum(np.isnan(Wb)) > 0 or np.sum(np.isnan(Wc)) > 0:
             print("NAN NAN NAN NAN NAN NAN NAN NAN NAN")
             if id == 0:
@@ -197,14 +196,11 @@ def intSolutionSearch(n, p, maxTries, maxNumIters, tol,
             MB = bestMB_np.copy()
             MC = bestMC_np.copy()
 
-        # sm.printMM(MA,MB,-999,-999,-999,-999)
-        # print('')
-        # sm.printM(MC,i,j)
         print(str(int(np.sum(MA)+np.sum(MB)+np.sum(MC)))+" ("+str(int(numOfMltpls))+")")
 
         if (numOfMltpls == 0):
             print("Untergrenze erreicht - ENDE")
-            np.save("solution_n3_"+str(time.time())+"_V6", [Wa, Wb, Wc])
+            np.save("solution_n5_"+str(time.time())+"_V6", [Wa, Wb, Wc])
             print("in Datei geschrieben")
             finished.value = 1
             mutex.release()
@@ -215,11 +211,11 @@ def intSolutionSearch(n, p, maxTries, maxNumIters, tol,
 
 if __name__ == '__main__':
     start = time.time()
-    numOfProc = int(mp.cpu_count())
+    numOfProc = int(mp.cpu_count())*0+1
     print("Anzahl Prozessoren: ", numOfProc)
 
-    n = 3
-    p = 23
+    n = 5
+    p = 105
 
     nn = int(n**2)
 
@@ -235,7 +231,7 @@ if __name__ == '__main__':
     bestMC = mp.RawArray('d', np.ones(p*nn, dtype=float))
 
     procs = [mp.Process(target=intSolutionSearch,
-                        args=(n, p, 50000, 1000000, tol, bestWa, bestWb, bestWc, bestMA, bestMB, bestMC, mutex, finished, i))
+                        args=(n, p, 500000, 10000000, tol, bestWa, bestWb, bestWc, bestMA, bestMB, bestMC, mutex, finished, i))
              for i in range(numOfProc)]
 
     for pp in procs:

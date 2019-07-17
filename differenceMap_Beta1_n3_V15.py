@@ -29,7 +29,7 @@ def PB(W):  # copy / not overwriting
         Wa = W[0].copy()
         Wb = W[1].copy()
         Wc = W[2].copy()
-        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1)
+        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1, 0.01)
         if success > 0:
             dist = np.linalg.norm(Wa-W[0], 2)**2+np.linalg.norm(Wb-W[1],
                                                                 2)**2+np.linalg.norm(Wc-W[2], 2)**2
@@ -156,7 +156,7 @@ def roundInit(n, p):
         Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
-        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1)
+        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1, 0.01)
     MA = np.ones(Wa.shape)
     MB = np.ones(Wb.shape)
     MC = np.ones(Wc.shape)
@@ -184,7 +184,7 @@ def roundInit(n, p):
             TC[i, j] = 0
             MC[i, j] = 0
             WcT[i, j] = np.minimum(np.maximum(np.round(WcT[i, j]), -1), 1)
-        success = biM.backpropM(WaT, WbT, WcT, MA, MB, MC, 100000, 0.1)
+        success = biM.backpropM(WaT, WbT, WcT, MA, MB, MC, 100000, 0.1, 0.01)
         if success > 0:
             Wa = WaT
             Wb = WbT
@@ -219,7 +219,7 @@ def diffMap(id, mutex):
     jumps = []  # indices of jumps
     heights = []  # multpliers (cyclCnt) of jumps
 
-    jumpFactor = 0.009375
+    jumpFactor = 0.015625
     bloomOn = True
 
     while True:
