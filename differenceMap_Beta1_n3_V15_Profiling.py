@@ -2,20 +2,21 @@
 import numpy as np
 import backprop as biM
 import bloomFilter as bf
-import multiprocessing as mp
+#import multiprocessing as mp
 import time
 import uuid
+#import line_profiler
 from numba import jit
 np.set_printoptions(precision=2, suppress=True)
 
-
+@profile
 def PA(W):  # no copy / overwriting !
     W[0] = np.minimum(np.maximum(np.round(W[0]), -1.0), 1.0)
     W[1] = np.minimum(np.maximum(np.round(W[1]), -1.0), 1.0)
     W[2] = np.minimum(np.maximum(np.round(W[2]), -1.0), 1.0)
     return W  # PA
 
-
+@profile
 def PB(W):  # copy / not overwriting
     minDist = 99999.9
     solFound = False
@@ -40,7 +41,7 @@ def PB(W):  # copy / not overwriting
         return [WaRet, WbRet, WcRet], True
     return W, False  # PB
 
-
+@profile
 def checkSolution(W):
     p = W[0].shape[0]
     nn = W[0].shape[1]
@@ -142,7 +143,7 @@ def findWeight(Wa, Wb, Wc, MA, MB, MC, ei):
                     matSel = 2
     return bestI, bestJ, bestErr, matSel  # findWeight
 
-
+@profile
 def roundInit(n, p):
     nn = int(n**2)
     success = -1
@@ -196,8 +197,8 @@ def roundInit(n, p):
     print("roundInit-Rundungen: ", str(rounds))
     return [Wa, Wb, Wc]  # roundInit
 
-
-def diffMap(id, mutex):
+@profile
+def diffMap(id):
     p = 23
     n = 3
     nn = int(n**2)
@@ -262,10 +263,11 @@ def diffMap(id, mutex):
                 jumps = []
                 heights = []
                 i = 0
+                return
             else:
                 print(".... keine gültige Lösung")
 
-        mutex.acquire()
+        #mutex.acquire()
         if i % 100 == 0:
             print("---------------------------")
             print("Prozess:", id)
@@ -277,7 +279,7 @@ def diffMap(id, mutex):
         if i > 2000 and norm2Delta > 3.0:
             print(i, " cycles -> Reset")
             print("tries:", numOfTries)
-        mutex.release()
+        #mutex.release()
 
         if cyclCnt > 0 and bloomOn:
             W[0] += (np.random.rand(p*nn).reshape([p, nn])*2.0-1.0)*cyclCnt*jumpFactor
@@ -303,16 +305,22 @@ def diffMap(id, mutex):
 
 
 if __name__ == '__main__':
-    numOfProc = int(mp.cpu_count())
-    print("Anzahl Prozessoren: ", numOfProc)
-
-    mutex = mp.Lock()
-    procs = [mp.Process(target=diffMap, args=(i, mutex)) for i in range(numOfProc)]
-
-    for pp in procs:
-        pp.start()
-    for pp in procs:
-        pp.join()
+#    numOfProc = int(mp.cpu_count())
+#    print("Anzahl Prozessoren: ", numOfProc)
+#
+    #mutex = mp.Lock()
+#    procs = [mp.Process(target=diffMap, args=(i, mutex)) for i in range(numOfProc)]
+#
+#    for pp in procs:
+#        pp.start()
+#    for pp in procs:
+#        pp.join()
+        
+        
+    diffMap(0)
+    
+    print("finished")
+    
 
 
 #

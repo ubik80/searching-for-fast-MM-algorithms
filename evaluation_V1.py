@@ -64,36 +64,26 @@ def bootStrapStats(_vals):
     return np.mean(means), CIlower, CIupper
 
 
-os.chdir("/Users/tillspaeth/Google Drive/V15DiffMap")
+os.chdir("/Users/tillspaeth/Google Drive/V16DiffMap")
 fileNames = os.listdir()
 TfileNames = []
 for f in fileNames:
-    if ".npy" in f:
+    if "_V16.npy" in f:
         TfileNames.append(f)
 fileNames = TfileNames
 
-blmOnCnt = 0
-blmOffCnt = 0
-itersWithBF = 0
-itersWOBF = 0
-triesWithBF = 0
-triesWOBF = 0
-itersWOBFAll = []
 itersWithFactor = dict()
-triesWithFactor = dict()
 numbWithFactor = dict()
 itersWithFactorAll = dict()
-triesWithFactorAll = dict()
-i = 0
+
 for f in fileNames:
-    i += 1
     sol = np.load(f, allow_pickle=True)
     Wa = sol[0]
     Wb = sol[1]
     Wc = sol[2]
-    if not checkSolution([Wa, Wb, Wc]):
-        print("Lösung nicht korrekt !!!!")
-        exit()
+    # if not checkSolution([Wa, Wb, Wc]):
+    #     print("Lösung nicht korrekt !!!!")
+    #     exit()
     jumpFactor = sol[3]
     diffs = sol[4]
     jumps = sol[5]
@@ -102,29 +92,17 @@ for f in fileNames:
     numOfCycles = sol[8]
     numOfTries = sol[9]
     bloomOn = sol[10]
+    success = sol[11]
 
-    if numOfCycles > 1:
-        if bloomOn:  # and jumpFactor == 0.0125:
-            blmOnCnt += 1
-            itersWithBF += numOfIters
-            triesWithBF += numOfTries
-            if str(jumpFactor) in itersWithFactor:
-                itersWithFactor[str(jumpFactor)] += numOfIters
-                triesWithFactor[str(jumpFactor)] += numOfTries
-                numbWithFactor[str(jumpFactor)] += 1
-                itersWithFactorAll[str(jumpFactor)].append(numOfIters)
-                triesWithFactorAll[str(jumpFactor)].append(numOfTries)
-            else:  # new
-                itersWithFactor[str(jumpFactor)] = numOfIters
-                triesWithFactor[str(jumpFactor)] = numOfTries
-                numbWithFactor[str(jumpFactor)] = 1
-                itersWithFactorAll[str(jumpFactor)] = [numOfIters]
-                triesWithFactorAll[str(jumpFactor)] = [numOfTries]
-        elif not bloomOn:  # not bloomOn
-            blmOffCnt += 1
-            itersWOBF += numOfIters
-            triesWOBF += numOfTries
-            itersWOBFAll.append(numOfIters)
+    if numOfCycles > 0 and bloomOn:
+        if str(jumpFactor) in itersWithFactor:
+            itersWithFactor[str(jumpFactor)] += numOfIters
+            numbWithFactor[str(jumpFactor)] += 1
+            itersWithFactorAll[str(jumpFactor)].append(numOfIters)
+        else:  # new
+            itersWithFactor[str(jumpFactor)] = numOfIters
+            numbWithFactor[str(jumpFactor)] = 1
+            itersWithFactorAll[str(jumpFactor)] = [numOfIters]
 
         # print("filename: ",f)
         # print("bloomFilter on: ",bloomOn)
@@ -154,26 +132,23 @@ for f in fileNames:
         # # plt.savefig(picName,dpi=300)
         # plt.close()
 
-print("# with BF: ", blmOnCnt)
-print("# w/o BF: ", blmOffCnt)
-print("# iters with BF: ", itersWithBF/blmOnCnt)
-print("# iters WO BF: ", itersWOBF/blmOffCnt)
-m, l, u = bootStrapStats(itersWOBFAll)
-print("    bootstrap: ", m, l, u)
-print("# tries with BF: ", triesWithBF/blmOnCnt)
-print("# tries WO BF: ", triesWOBF/blmOffCnt)
+# print("# with BF: ", blmOnCnt)
+# print("# w/o BF: ", blmOffCnt)
+# print("# iters with BF: ", itersWithBF/blmOnCnt)
+# print("# iters WO BF: ", itersWOBF/blmOffCnt)
+# m, l, u = bootStrapStats(itersWOBFAll)
+# print("    bootstrap: ", m, l, u)
+# print("# tries with BF: ", triesWithBF/blmOnCnt)
+# print("# tries WO BF: ", triesWOBF/blmOffCnt)
 
 
 for n in numbWithFactor:
-    print("factor ", n, ", samples: ",
+    print("factor ", round(float(n), 5), ", samples: ",
           numbWithFactor[n], ", avg. #iters: ", round(itersWithFactor[n]/numbWithFactor[n], 1))
     m, l, u = bootStrapStats(itersWithFactorAll[n])
     print("                                   bootstrap: ",
           round(m, 1), round(l, 1), round(u, 1))
-    print("                                 avg. #tries: ",
-          round(triesWithFactor[n]/numbWithFactor[n], 1))
 
-os.chdir("/Users/tillspaeth/Desktop/Masterarbeit/searching-for-fast-MM-algorithms")
 x = []
 l = []
 u = []
@@ -188,28 +163,15 @@ s = np.argsort(np.array(x))
 plt.plot(np.array(x)[s], np.array(m)[s], '-o')
 plt.plot(np.array(x)[s], np.array(l)[s], '-o')
 plt.plot(np.array(x)[s], np.array(u)[s], '-o')
-#plt.plot([0.00625, 0.025], [8209.4677, 8209.4677])
 plt.xticks(np.array(x)[s])
-
-x = []
-l = []
-u = []
-m = []
-for f in itersWithFactor:
-    x.append(float(f))
-    mm, ll, uu = bootStrapStats(triesWithFactorAll[f])
-    l.append(ll)
-    u.append(uu)
-    m.append(mm)
-s = np.argsort(np.array(x))
-plt.plot(np.array(x)[s], np.array(m)[s], '-o')
-plt.plot(np.array(x)[s], np.array(l)[s], '-o')
-plt.plot(np.array(x)[s], np.array(u)[s], '-o')
-plt.plot([0.00625, 0.025], [9.6159, 9.6159])
-plt.xticks(np.array(x)[s])
-
 plt.xlabel("factor")
 plt.ylabel("avg. num. iterations")
-plt.savefig('factorItersGraph.png', dpi=300)
+plt.xticks(np.array(x)[s])
 
-facts = [0.00625/2*i for i in range(2, 9)]
+# os.chdir("/Users/tillspaeth/Desktop/Masterarbeit/searching-for-fast-MM-algorithms")
+#plt.savefig('factorItersGraph.png', dpi=300)
+
+# itersWithFactorAll.keys()
+# iters = itersWithFactorAll["0.021875000000000002"]
+#
+# n, bins, patches = plt.hist(iters, 5, facecolor='blue', alpha=1.0)

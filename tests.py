@@ -1,9 +1,12 @@
+#import imp
 import numpy as np
 import matplotlib.pyplot as plt
 from numba import jit
 import os
 import backprop as biM
 np.set_printoptions(precision=2, suppress=True)
+
+# imp.find_module('murmurhash')
 
 
 def checkSolution(W):

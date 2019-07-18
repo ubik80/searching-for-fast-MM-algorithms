@@ -220,9 +220,9 @@ def diffMap(id, mutex):
     heights = []  # multpliers (cyclCnt) of jumps
 
     bloomOn = True
-    facts = [0.00625/2*i for i in range(2, 9)]
+    facts = [0.00625/2*i for i in range(6, 12)]
     jumpFactor = facts[np.random.randint(0, len(facts))]
-    facts
+    jumpFactor
 
     while True:
 
@@ -281,6 +281,7 @@ def diffMap(id, mutex):
                     [0, 0, 0, jumpFactor, diffs, jumps, heights, i, numOfCycles, numOfTries, bloomOn, False])
             print(".... 5000 cycls.")
             W = roundInit(n, p)
+            jumpFactor = facts[np.random.randint(0, len(facts))]
             BFs = [bf.bloomFilter(2*nn*p, 0.00001) for b in range(20)]
             numOfCycles = 0
             diffs = []
