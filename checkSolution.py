@@ -60,6 +60,9 @@ def checkSolutionReal(W):
     n = int(np.sqrt(nn))
     BIdx = np.array([k*n for k in range(n)])
     c = np.zeros(nn, dtype=float)
+    Wa = W[0]
+    Wb = W[1]
+    Wc = W[2]
 
     @jit(nopython=True, nogil=True, cache=True)
     def fastLoop(n, nn, p, BIdx, c, Wa, Wb, Wc):

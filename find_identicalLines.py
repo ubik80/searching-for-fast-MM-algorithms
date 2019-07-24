@@ -37,29 +37,30 @@ for f in fileNames:
         Wa = np.matrix(fileContent[0], dtype=int)
         Wb = np.matrix(fileContent[1], dtype=int)
         Wc = np.matrix(fileContent[2], dtype=int)
-        if np.linalg.matrix_rank(Wa) < 9 or np.linalg.matrix_rank(Wb) < 9:
-            print("Rang < N !!!")
-            quit()
 
-        print(f)
-        numOfOps = so.reducedOps(Wa)  # +so.reducedOps(Wb)+so.reducedOps(Wc)
-        # numOfOps = so.numOfOps(Wc)
-        print("Anzahl Adds/Subs (Wc) ≤", numOfOps, " (", minNumOfOps, ")")
-        if numOfOps < minNumOfOps:
-            minNumOfOps = numOfOps
-            bestFile = f
-
-print("------------------------")
-print("best file: ", bestFile)
-quit()
-
-##############################################
-
-f = "/Users/tillspaeth/Google Drive/V14DiffMap/solution_3_25_1562364026.7989964_V14.npy"
-fileContent = np.load(f, allow_pickle=True)
-cs.checkSolutionInt([fileContent[0], fileContent[1], fileContent[2]])
-Wa = np.matrix(fileContent[0], dtype=int)
-Wb = np.matrix(fileContent[1], dtype=int)
-Wc = np.matrix(fileContent[2], dtype=int)
-
-so.reducedOps(Wc)
+        for i in range(Wa.shape[0]):
+            for ii in range(i+1, Wa.shape[0]):
+                if np.array_equal(Wa[i, :], Wa[ii, :]):
+                    print("FOUND in Wa!!!")
+                    print(f)
+                    print("Wa:")
+                    print(Wa[i, :])
+                    print(Wa[ii, :])
+                    print("Wb:")
+                    print(Wb[i, :])
+                    print(Wb[ii, :])
+                    print("--------------------------------")
+                    # quit()
+        for i in range(Wb.shape[0]):
+            for ii in range(i+1, Wb.shape[0]):
+                if np.array_equal(Wb[i, :], Wb[ii, :]):
+                    print("FOUND in Wb!!!")
+                    print(f)
+                    print("Wa:")
+                    print(Wa[i, :])
+                    print(Wa[ii, :])
+                    print("Wb:")
+                    print(Wb[i, :])
+                    print(Wb[ii, :])
+                    print("--------------------------------")
+                    # quit()
