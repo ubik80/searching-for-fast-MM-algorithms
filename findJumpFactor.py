@@ -77,6 +77,7 @@ numbWithFactor = dict()
 itersWithFactorAll = dict()
 
 for f in fileNames:
+    # print(f)
     sol = np.load(f, allow_pickle=True)
     Wa = sol[0]
     Wb = sol[1]
@@ -84,7 +85,7 @@ for f in fileNames:
     # if not checkSolution([Wa, Wb, Wc]):
     #     print("Lösung nicht korrekt !!!!")
     #     exit()
-    jumpFactor = sol[3]
+    jumpFactor = round(sol[3], 3)
     diffs = sol[4]
     jumps = sol[5]
     heights = sol[6]
@@ -141,7 +142,6 @@ for f in fileNames:
 # print("# tries with BF: ", triesWithBF/blmOnCnt)
 # print("# tries WO BF: ", triesWOBF/blmOffCnt)
 
-
 for n in numbWithFactor:
     print("factor ", round(float(n), 5), ", samples: ",
           numbWithFactor[n], ", avg. #iters: ", round(itersWithFactor[n]/numbWithFactor[n], 1))
@@ -166,7 +166,6 @@ plt.plot(np.array(x)[s], np.array(u)[s], '-o')
 plt.xticks(np.array(x)[s])
 plt.xlabel("factor")
 plt.ylabel("avg. num. iterations")
-plt.xticks(np.array(x)[s])
 
 # os.chdir("/Users/tillspaeth/Desktop/Masterarbeit/searching-for-fast-MM-algorithms")
 #plt.savefig('factorItersGraph.png', dpi=300)

@@ -220,9 +220,9 @@ def diffMap(id, mutex):
     heights = []  # multpliers (cyclCnt) of jumps
 
     bloomOn = True
-    facts = [0.00625/2*i for i in range(6, 12)]
+    #facts = [round(0.00625/2*i, 7) for i in range(2, 13)]
+    facts = [0.0375, 0.009375, 0.028125, 0.025, 0.03125, 0.021875, 0.034375]
     jumpFactor = facts[np.random.randint(0, len(facts))]
-    jumpFactor
 
     while True:
 

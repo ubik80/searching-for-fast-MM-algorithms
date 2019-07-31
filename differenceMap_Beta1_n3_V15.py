@@ -205,7 +205,9 @@ def diffMap(id, mutex):
     seed = int(time.time())+int(uuid.uuid4())+id
     np.random.seed(seed % 135790)
     W = roundInit(n, p)
-    BFs = [bf.bloomFilter(2*nn*p, 0.00001) for b in range(20)]
+    BFProp = 0.00001
+    BFElementsInserted = 2000
+    BFs = [bf.bloomFilter(BFElementsInserted, BFProp) for b in range(20)]
     i = 0  # iteration
     numOfCycles = 0
     numOfTries = 0
@@ -255,7 +257,8 @@ def diffMap(id, mutex):
                         [WW[0], WW[1], WW[2], jumpFactor, diffs, jumps, heights, i, numOfCycles, numOfTries, bloomOn])
                 print(".... Lösung korrekt")
                 W = roundInit(n, p)
-                BFs = [bf.bloomFilter(2*nn*p, 0.00001) for b in range(20)]
+                BFs = [bf.bloomFilter(BFElementsInserted, BFProp)
+                       for b in range(20)]
                 numOfCycles = 0
                 numOfTries = 0
                 diffs = []
@@ -274,7 +277,7 @@ def diffMap(id, mutex):
         if cyclCnt > 0:
             #print("**** Zyklus entdeckt! *****")
             print("**** cyclCnt: ", cyclCnt)
-        if i > 2000 and norm2Delta > 3.0:
+        if i > 2000:  # and norm2Delta > 3.0:
             print(i, " cycles -> Reset")
             print("tries:", numOfTries)
         mutex.release()
@@ -291,7 +294,7 @@ def diffMap(id, mutex):
             seed = int(time.time())+int(uuid.uuid4())+id
             np.random.seed(seed % 135790)
             W = roundInit(n, p)
-            BFs = [bf.bloomFilter(2*nn*p, 0.00001) for b in range(20)]
+            BFs = [bf.bloomFilter(BFElementsInserted, BFProp) for b in range(20)]
             numOfCycles = 0
             numOfTries += 1
             diffs = []

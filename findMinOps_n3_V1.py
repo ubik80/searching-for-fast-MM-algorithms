@@ -2,7 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import checkSolution as cs
-import summationOps as so
+import reduceOps as ro
+
+maxLength = 2000
 
 
 def listdir_fullpath(d):
@@ -37,29 +39,72 @@ for f in fileNames:
         Wa = np.matrix(fileContent[0], dtype=int)
         Wb = np.matrix(fileContent[1], dtype=int)
         Wc = np.matrix(fileContent[2], dtype=int)
+        Wa, Wb, Wc = np.round(Wa), np.round(Wb), np.round(Wc)
         if np.linalg.matrix_rank(Wa) < 9 or np.linalg.matrix_rank(Wb) < 9:
             print("Rang < N !!!")
             quit()
 
         print(f)
-        numOfOps = so.reducedOps(Wa)  # +so.reducedOps(Wb)+so.reducedOps(Wc)
-        # numOfOps = so.numOfOps(Wc)
-        print("Anzahl Adds/Subs (Wc) ≤", numOfOps, " (", minNumOfOps, ")")
+        numOfOps = 0
+        print("Wa", end=" ", flush=True)
+        M = Wa
+        A, L = ro.optimizeAddsSubs(M, maxLength)
+        R = ro.calcResiduals(A, L, M)
+        optOps = ro.countOptimizedOps(A, L, R)
+        if optOps < 0:
+            optOps = countRawOps(M)
+        numOfOps += optOps
+        print("Wb", end=" ", flush=True)
+        M = Wb
+        A, L = ro.optimizeAddsSubs(M, maxLength)
+        R = ro.calcResiduals(A, L, M)
+        optOps = ro.countOptimizedOps(A, L, R)
+        if optOps < 0:
+            optOps = countRawOps(M)
+        numOfOps += optOps
+        print("Wc", end=" ", flush=True)
+        M = Wc
+        A, L = ro.optimizeAddsSubs(M, maxLength)
+        R = ro.calcResiduals(A, L, M)
+        optOps = ro.countOptimizedOps(A, L, R)
+        if optOps < 0:
+            optOps = ro.countRawOps(M)
+        numOfOps += optOps
+
+        print("     Anzahl Adds/Subs ≤", numOfOps, " (", minNumOfOps, ")")
         if numOfOps < minNumOfOps:
             minNumOfOps = numOfOps
             bestFile = f
 
-print("------------------------")
-print("best file: ", bestFile)
+        print("---------------------------------------------------------------")
+print(" ")
+print("         best file: ", bestFile)
 quit()
 
 ##############################################
 
-f = "/Users/tillspaeth/Google Drive/V14DiffMap/solution_3_25_1562364026.7989964_V14.npy"
+f = "solution_3_1117_1562626845.291288_V15.npy"
 fileContent = np.load(f, allow_pickle=True)
 cs.checkSolutionInt([fileContent[0], fileContent[1], fileContent[2]])
 Wa = np.matrix(fileContent[0], dtype=int)
 Wb = np.matrix(fileContent[1], dtype=int)
 Wc = np.matrix(fileContent[2], dtype=int)
 
-so.reducedOps(Wc)
+# so.reducedOps(Wc)
+
+A, L = ro.optimizeAddsSubs(Wa, 2000)
+R = ro.calcResiduals(A, L, Wa)
+ro.countOptimizedOps(A, L, R)
+ro.countRawOps(Wa)
+
+A, L = ro.optimizeAddsSubs(Wb, 2000)
+R = ro.calcResiduals(A, L, Wb)
+ro.countOptimizedOps(A, L, R)
+ro.countRawOps(Wb)
+
+A, L = ro.optimizeAddsSubs(Wc, 3000)
+R = ro.calcResiduals(A, L, Wc)
+ro.countOptimizedOps(A, L, R)
+ro.countRawOps(Wc)
+
+# 2000: 28 / 43
