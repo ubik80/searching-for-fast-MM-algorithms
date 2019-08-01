@@ -7,15 +7,13 @@ class bloomFilter(object):
     def __init__(self, n, P):
         # self.m = int(-n*mt.log(P, 2)/(mt.log(2, 2)**2))
         # self.K = int(self.m/n*mt.log(2, 2))
-
         self.m = int(-n*mt.log(P)/(mt.log(2)**2))
         self.K = int(self.m/n*mt.log(2))
-
         self.mem = np.zeros(self.m, dtype=bool)
-        print("Bloom Filter:")
-        print("P = ", P)
-        print("m = ", self.m)
-        print("k = ", self.K)
+        # print("Bloom Filter:")
+        # print("P = ", P)
+        # print("m = ", self.m)
+        # print("k = ", self.K)
         return
 
     def mmhash(self, W, k):

@@ -16,8 +16,8 @@ def goSearch(id):
             Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
             Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
             Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
-            nueAB = 0.02
-            nueC = 0.1
+            nueAB = 0.05
+            nueC = 0.15
             tol = 0.1
             iters = 999
             while tol > 0.00001 and iters > 0:
@@ -36,7 +36,7 @@ if __name__ == '__main__':
     numOfProc = int(mp.cpu_count())*0+4
     print("Anzahl Prozessoren: ", numOfProc)
 
-    procs = [mp.Process(target=goSearch, args=[0]) for i in range(numOfProc)]
+    procs = [mp.Process(target=goSearch, args=[i]) for i in range(numOfProc)]
 
     for pp in procs:
         pp.start()

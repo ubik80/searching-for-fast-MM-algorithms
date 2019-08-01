@@ -64,11 +64,11 @@ def bootStrapStats(_vals):
     return np.mean(means), CIlower, CIupper
 
 
-os.chdir("/Users/tillspaeth/Google Drive/V16DiffMap")
+os.chdir("/Users/tillspaeth/Google Drive/V18DiffMap")
 fileNames = os.listdir()
 TfileNames = []
 for f in fileNames:
-    if "_V16.npy" in f:
+    if "_V18.npy" in f:
         TfileNames.append(f)
 fileNames = TfileNames
 
@@ -92,10 +92,10 @@ for f in fileNames:
     numOfIters = sol[7]
     numOfCycles = sol[8]
     numOfTries = sol[9]
-    bloomOn = sol[10]
-    success = sol[11]
+    #bloomOn = sol[10]
+    #success = sol[11]
 
-    if numOfCycles > 0 and bloomOn:
+    if numOfCycles > 0 or True:  # and bloomOn:
         if str(jumpFactor) in itersWithFactor:
             itersWithFactor[str(jumpFactor)] += numOfIters
             numbWithFactor[str(jumpFactor)] += 1
@@ -160,9 +160,9 @@ for f in itersWithFactor:
     u.append(uu)
     m.append(mm)
 s = np.argsort(np.array(x))
-plt.plot(np.array(x)[s], np.array(m)[s], '-o')
-plt.plot(np.array(x)[s], np.array(l)[s], '-o')
-plt.plot(np.array(x)[s], np.array(u)[s], '-o')
+plt.plot(np.array(x)[s], np.array(m)[s], '-.')
+plt.plot(np.array(x)[s], np.array(l)[s], '-.')
+plt.plot(np.array(x)[s], np.array(u)[s], '-.')
 plt.xticks(np.array(x)[s])
 plt.xlabel("factor")
 plt.ylabel("avg. num. iterations")

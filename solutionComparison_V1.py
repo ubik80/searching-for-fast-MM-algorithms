@@ -13,11 +13,15 @@ def listdir_fullpath(d):
 
 
 fileNames = []
-# fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V14DiffMap")
-# fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V15DiffMap")
-fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V16DiffMap")
 # fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/alteVersionenDiffMap")
 # fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/heuristik")
+# fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V14DiffMap")
+# fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V15DiffMap")
+# fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V16DiffMap")
+# fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V17DiffMap")
+fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V18DiffMap")
+fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V19DiffMap")
+fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V20DiffMap")
 
 ff = []
 for f in fileNames:
@@ -36,8 +40,7 @@ bestFile = "not set"
 n = 3
 nn = int(n**2)
 p = 23
-# bloomFilter = bf.bloomFilter(2*nn*p, 0.00000001)
-# identicals = []
+
 bloomFilterWa = bf.bloomFilterMatrix(2000, 0.00001)
 identicalsWa = []
 bloomFilterWb = bf.bloomFilterMatrix(2000, 0.00001)
@@ -55,7 +58,6 @@ for f in fileNames:
         correct = cs.checkSolutionInt([fileContent[0], fileContent[1], fileContent[2]])
     else:
         correct = False
-
     if correct:
         Wa = np.matrix(fileContent[0], dtype=int)
         Wb = np.matrix(fileContent[1], dtype=int)
@@ -120,20 +122,6 @@ print("best file: ", bestFile)
 print(" ")
 print("total numb. of solutions: ", numOfSolutions)
 print(" ")
-# print("identicals Wa:")
-# print(identicalsWa)
-# print(" ")
-# print("identicals Wb:")
-# print(identicalsWb)
-# print(" ")
-# print("identicals Wc:")
-# print(identicalsWc)
-# print("---------------------------------------------------------------")
-# print(" ")
-#
-# identicalsWa = []
-# identicalsWa.append(
-#     "/Users/tillspaeth/Google Drive/V16DiffMap/solution_3_1277_1564202673.5679944_V16.npy")
 
 WaGroups = []
 for i in range(len(identicalsWa)):
@@ -196,30 +184,5 @@ for i in range(len(identicalsWc)):
 print(" ")
 
 np.save("identicalsWaWbWc", [WaGroups, WbGroups, WcGroups])
-# quit()
 
 ##############################################
-
-# f = "solution_3_1117_1562626845.291288_V15.npy"
-# fileContent = np.load(f, allow_pickle=True)
-# cs.checkSolutionInt([fileContent[0], fileContent[1], fileContent[2]])
-# Wa = np.matrix(fileContent[0], dtype=int)
-# Wb = np.matrix(fileContent[1], dtype=int)
-# Wc = np.matrix(fileContent[2], dtype=int)
-#
-# # so.reducedOps(Wc)
-#
-# A, L = ro.optimizeAddsSubs(Wa, 2000)
-# R = ro.calcResiduals(A, L, Wa)
-# ro.countOptimizedOps(A, L, R)
-# ro.countRawOps(Wa)
-#
-# A, L = ro.optimizeAddsSubs(Wb, 2000)
-# R = ro.calcResiduals(A, L, Wb)
-# ro.countOptimizedOps(A, L, R)
-# ro.countRawOps(Wb)
-#
-# A, L = ro.optimizeAddsSubs(Wc, 3000)
-# R = ro.calcResiduals(A, L, Wc)
-# ro.countOptimizedOps(A, L, R)
-# ro.countRawOps(Wc)
