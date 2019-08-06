@@ -16,17 +16,18 @@ def goSearch(id):
             Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
             Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
             Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
-            nueAB = 0.05
+            nueA = 0.05
+            nueB = 0.1
             nueC = 0.15
             tol = 0.1
             iters = 999
-            while tol > 0.00001 and iters > 0:
-                iters = biM.backpropNue(Wa, Wb, Wc, 50000000, tol, nueAB, nueC)
+            while tol > 0.001 and iters > 0:
+                iters = biM.backpropNueABC(Wa, Wb, Wc, 50000000, tol, nueA, nueB, nueC)
                 print("p:"+str(p)+" tol:"+str(tol)+" iters:"+str(iters))
                 tol *= 0.99
             if iters > 0 and np.sum(np.isnan(Wa)) == 0:
                 np.save("findStartValues_5_"+str(p)+"_id_"+str(id)+"_" +
-                        str(int(uuid.uuid4()))+"_V1", [Wa, Wb, Wc, nueAB, nueC, tol])
+                        str(int(uuid.uuid4()))+"_V1", [Wa, Wb, Wc, nueA, nueB, nueC, tol])
                 success = True
                 print("solution for p = ", p, " found.")
     return  # goSearch

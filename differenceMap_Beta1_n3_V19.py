@@ -208,8 +208,11 @@ def diffMap(id, mutex):
     jumps = []  # indices of jumps
     heights = []
     numOfJumps = 0
-    maxNumIters = 5000
-    jumpFactor = 0.25
+    #####################
+    maxNumIters = 5000*30
+    #####################
+    jumpFactor = 0.25*0.0
+    #####################
     minDiff = 99999
     maxDiff = -99999
     inBand = 0
