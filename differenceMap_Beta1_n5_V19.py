@@ -26,7 +26,7 @@ def PB(W):  # copy / not overwriting
         Wa = W[0].copy()
         Wb = W[1].copy()
         Wc = W[2].copy()
-        success = biM.backpropNueABC(Wa, Wb, Wc, 3000000, 0.01, 0.2, 0.2, 0.5)
+        success = biM.backpropNueABC2(Wa, Wb, Wc, 30000000, 0.1, 0.05, 0.05, 0.1, 0.01, 10000)
         if success > 0:
             dist = np.linalg.norm(Wa-W[0], 2)**2+np.linalg.norm(Wb-W[1],
                                                                 2)**2+np.linalg.norm(Wc-W[2], 2)**2
@@ -108,7 +108,7 @@ def roundInit(n, p):
         Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
-        success = biM.backpropNueABC(Wa, Wb, Wc, 3000000, 0.01, 0.025, 0.05, 0.1)
+        success = biM.backpropNueABC2(Wa, Wb, Wc, 10000000, 0.1, 0.05, 0.1, 0.15, 0.01, 10000)
         print("roundInit - success=", success)
     print("roundInit - Initialisierung erfolgreich")
     MA = np.ones(Wa.shape)
@@ -138,13 +138,14 @@ def roundInit(n, p):
             TC[i, j] = 0
             MC[i, j] = 0
             WcT[i, j] = np.minimum(np.maximum(np.round(WcT[i, j]), -1), 1)
-        success = biM.backpropNueM(Wa, Wb, Wc, MA, MB, MC, 3000000, 0.01, 0.2, 0.2, 0.5)
+        success = biM.backpropNueM2(WaT, WbT, WcT, MA, MB, MC, 300000,
+                                    0.1, 0.05, 0.1, 0.15, 0.01, 10000)
         if success > 0:
             Wa = WaT
             Wb = WbT
             Wc = WcT
             rounds += 1
-            print("roundInit - Position gerundet")
+            print("o", end=" ", flush=True)
         else:
             if matSel == 0:
                 MA[i, j] = 1
@@ -152,8 +153,9 @@ def roundInit(n, p):
                 MB[i, j] = 1
             if matSel == 2:
                 MC[i, j] = 1
-            print("roundInit - Rundung nicht erfolgreich")
+            print("x", end=" ", flush=True)
     print("roundInit-Rundungen: ", str(rounds))
+    np.save("roundInit_n5_V19", [Wa, Wb, Wc])
     return [Wa, Wb, Wc]  # roundInit
 
 

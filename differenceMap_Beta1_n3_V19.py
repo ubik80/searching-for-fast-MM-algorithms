@@ -5,6 +5,7 @@ import multiprocessing as mp
 import time
 import uuid
 from numba import jit
+import checkSolution as cs
 np.set_printoptions(precision=2, suppress=True)
 
 
@@ -39,49 +40,6 @@ def PB(W):  # copy / not overwriting
     if solFound:
         return [WaRet, WbRet, WcRet], True
     return W, False  # PB
-
-
-def checkSolution(W):
-    p = W[0].shape[0]
-    nn = W[0].shape[1]
-    n = int(np.sqrt(nn))
-    BIdx = np.array([k*n for k in range(n)])
-    c = np.zeros(nn, dtype=float)
-    Wa = np.maximum(np.minimum(np.round(W[0]), 1.0), -1.0)
-    Wb = np.maximum(np.minimum(np.round(W[1]), 1.0), -1.0)
-    Wc = np.maximum(np.minimum(np.round(W[2]), 1.0), -1.0)
-
-    @jit(nopython=True, nogil=True, cache=True)
-    def fastLoop(n, nn, p, BIdx, c, Wa, Wb, Wc):
-        for i in range(100):
-            a = np.random.rand(nn)*2.0-1.0
-            b = np.random.rand(nn)*2.0-1.0
-            nA = np.linalg.norm(a, 2)
-            nB = np.linalg.norm(b, 2)
-
-            if np.abs(nA) > 0.1 and np.abs(nB) > 0.1:
-                a /= nA
-                b /= nB
-
-                for ii in range(n):  # Matrixmultiplikation für abgerollte Matrizen
-                    AA = a[ii*n:ii*n+n]
-                    for jj in range(n):
-                        BB = b[BIdx+jj]
-                        c[ii*n+jj] = AA.dot(BB)
-
-                aWaveStar = Wa.dot(a)
-                bWaveStar = Wb.dot(b)
-                cWaveStar = aWaveStar*bWaveStar
-                cWave = Wc.dot(cWaveStar)
-                errC = cWave-c
-                err2Norm = np.linalg.norm(errC, 2)
-                if err2Norm > 0.001:
-                    return False
-            else:
-                i -= 1
-        return True  # fastLoop
-    ret = fastLoop(n, nn, p, BIdx, c, Wa, Wb, Wc)
-    return ret  # checkSolution
 
 
 @jit(nopython=True, nogil=True, cache=True)
@@ -208,11 +166,8 @@ def diffMap(id, mutex):
     jumps = []  # indices of jumps
     heights = []
     numOfJumps = 0
-    #####################
-    maxNumIters = 5000*30
-    #####################
-    jumpFactor = 0.25*0.0
-    #####################
+    maxNumIters = 5000
+    jumpFactor = 0.25
     minDiff = 99999
     maxDiff = -99999
     inBand = 0
@@ -248,7 +203,7 @@ def diffMap(id, mutex):
             mutex.acquire()
             print(id, ", Lösung gefunden?")
             WW = PA(PB(W)[0])  # PA is overwriting, but PB is not
-            c2 = checkSolution(WW)
+            c2 = cs.checkSolutionInt(WW)
             if c2:
                 print(id, ".... Lösung korrekt")
                 mutex.release()
