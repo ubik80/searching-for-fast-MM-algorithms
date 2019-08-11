@@ -2,7 +2,7 @@
 
 scp *.py ve73yen@ppc801.mirz.uni-jena.de:~/
 
-for i in `seq 1 20`;
+for i in `seq 1 10`;
 do
   num=$(printf "%02d" $i)
   toRun="ssh -t ve73yen@ppc8$num.mirz.uni-jena.de 'python3 differenceMap_Beta1_n5_V19.py'"
