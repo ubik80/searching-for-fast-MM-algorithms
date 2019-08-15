@@ -3,7 +3,7 @@ import os
 import numpy as np
 from numba import jit
 import smallStuff as sm
-import backprop as biM
+import backprop as bp
 import multiprocessing as mp
 import time
 import uuid
@@ -72,6 +72,70 @@ def findWeight(Wa, Wb, Wc, MA, MB, MC, ei):
     return bestI, bestJ, bestErr, matSel  # findWeight
 
 
+def roundInit(n, p):
+    nn = int(n**2)
+    success = -1
+    while success < 0:
+        print("roundInit - Initialisierung ...")
+        Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
+        Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
+        Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
+        success = bp.backpropNueABC2(Wa, Wb, Wc, 50000000, 0.1, 0.05, 0.05, 0.1, 0.0001, 10000)
+        print("roundInit - success=", success)
+    print("roundInit - Initialisierung erfolgreich")
+    MA = np.ones(Wa.shape)
+    MB = np.ones(Wb.shape)
+    MC = np.ones(Wc.shape)
+    TA = np.ones(Wa.shape)
+    TB = np.ones(Wb.shape)
+    TC = np.ones(Wc.shape)
+    ei = np.zeros(nn, dtype=float)
+    rounds = 0
+    noRoundForIters = 0
+    while True:
+        i, j, err, matSel = findWeight(Wa, Wb, Wc, TA, TB, TC, ei)
+        if i < 0:
+            break
+        WaT = Wa.copy()
+        WbT = Wb.copy()
+        WcT = Wc.copy()
+        if matSel == 0:
+            TA[i, j] = 0
+            MA[i, j] = 0
+            WaT[i, j] = np.minimum(np.maximum(np.round(WaT[i, j]), -1), 1)
+        if matSel == 1:
+            TB[i, j] = 0
+            MB[i, j] = 0
+            WbT[i, j] = np.minimum(np.maximum(np.round(WbT[i, j]), -1), 1)
+        if matSel == 2:
+            TC[i, j] = 0
+            MC[i, j] = 0
+            WcT[i, j] = np.minimum(np.maximum(np.round(WcT[i, j]), -1), 1)
+        success = bp.backpropNueM2(WaT, WbT, WcT, MA, MB, MC, 300000,
+                                   0.1, 0.05, 0.05, 0.1, 0.0001, 10000)
+        if success > 0:
+            Wa = WaT
+            Wb = WbT
+            Wc = WcT
+            rounds += 1
+            noRoundForIters = 0
+            print("o", end=" ", flush=True)
+        else:
+            if matSel == 0:
+                MA[i, j] = 1
+            if matSel == 1:
+                MB[i, j] = 1
+            if matSel == 2:
+                MC[i, j] = 1
+            noRoundForIters += 1
+            print("x", end=" ", flush=True)
+        if noRoundForIters > 50:
+            print("keine Rundungen mehr seit ... -> Abbruch")
+            break
+    print("roundInit-Rundungen: ", str(rounds))
+    return [Wa, Wb, Wc]  # roundInit
+
+
 @jit(nopython=True, nogil=True, cache=True)
 def resets(MA, MB, MC):
     nn = MA.shape[1]
@@ -96,7 +160,7 @@ def resets(MA, MB, MC):
                 if MC[jj, ii] == 0.0:
                     MC[jj, ii] = 1.0
                     ss = True
-    return
+    return  # resets
 
 
 def intSolutionSearch(n, p, maxTries, maxNumIters, tol,
@@ -107,11 +171,15 @@ def intSolutionSearch(n, p, maxTries, maxNumIters, tol,
     nn = int(n**2)
     ei = np.zeros(nn, dtype=float)
 
-    Wa, Wb, Wc, MA, MB, MC = np.load("solution_n5_temp_7600.0.npy", allow_pickle=True)
+    Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
+    Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
+    Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
 
-    # MA = np.ones(Wa.shape)
-    # MB = np.ones(Wb.shape)
-    # MC = np.ones(Wc.shape)
+    Wa, Wb, Wc = roundInit(n, p)
+
+    MA = np.ones(Wa.shape)
+    MB = np.ones(Wb.shape)
+    MC = np.ones(Wc.shape)
     iterFact = 1
 
     mutex.acquire()
@@ -137,7 +205,10 @@ def intSolutionSearch(n, p, maxTries, maxNumIters, tol,
             MC[i, j] = 0.0
             Wc[i, j] = float(min(max(round(Wc[i, j]), -1.0), 1.0))
 
-        success = biM.backpropM(Wa, Wb, Wc, MA, MB, MC, maxNumIters*iterFact, 0.01)
+        # success = bp.backpropM(Wa, Wb, Wc, MA, MB, MC, maxNumIters*iterFact, 0.01
+        success = bp.backpropNueM2(Wa, Wb, Wc, MA, MB, MC, maxNumIters *
+                                   iterFact, 0.1, 0.05, 0.05, 0.1, 0.0001, 10000)
+
         iterFact = 1
 
         if not success:
@@ -206,16 +277,16 @@ def intSolutionSearch(n, p, maxTries, maxNumIters, tol,
             mutex.release()
             return
         mutex.release()
-    return
+    return  # intSolutionSearch
 
 
 if __name__ == '__main__':
     start = time.time()
-    numOfProc = int(mp.cpu_count())*0+1
+    numOfProc = int(mp.cpu_count())
     print("Anzahl Prozessoren: ", numOfProc)
 
     n = 5
-    p = 105
+    p = 112
 
     nn = int(n**2)
 
@@ -231,7 +302,7 @@ if __name__ == '__main__':
     bestMC = mp.RawArray('d', np.ones(p*nn, dtype=float))
 
     procs = [mp.Process(target=intSolutionSearch,
-                        args=(n, p, 500000, 10000000, tol, bestWa, bestWb, bestWc, bestMA, bestMB, bestMC, mutex, finished, i))
+                        args=(n, p, 50000000, 10000000*0+3000000, tol, bestWa, bestWb, bestWc, bestMA, bestMB, bestMC, mutex, finished, i))
              for i in range(numOfProc)]
 
     for pp in procs:

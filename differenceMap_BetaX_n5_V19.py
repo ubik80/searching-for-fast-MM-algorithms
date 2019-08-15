@@ -112,8 +112,6 @@ def roundInit(n, p):
         print("roundInit - success=", success)
     print("roundInit - Initialisierung erfolgreich")
 
-    # return [Wa, Wb, Wc]
-
     MA = np.ones(Wa.shape)
     MB = np.ones(Wb.shape)
     MC = np.ones(Wc.shape)
@@ -164,7 +162,7 @@ def roundInit(n, p):
             print("keine Rundungen mehr seit ... -> Abbruch")
             break
     print("roundInit-Rundungen: ", str(rounds))
-    np.save("roundInit_n5_V19"+str(time.time()), [Wa, Wb, Wc])
+    #np.save("roundInit_n5_V19"+str(time.time()), [Wa, Wb, Wc])
     return [Wa, Wb, Wc]  # roundInit
 
 
@@ -206,8 +204,31 @@ def diffMap(id, mutex):
                 maxDiff = -99999
                 inBand = 0
                 i = 0
-        PAy = PA([2.0*PBx[0]-W[0], 2.0*PBx[1]-W[1], 2.0*PBx[2]-W[2]])
-        delta = [PAy[0]-PBx[0], PAy[1]-PBx[1], PAy[2]-PBx[2]]
+        PAx = PA(W)  # not overwriting
+        fA = [PAx[0]*(1.0-1.0/beta)+W[0]/beta, PAx[1]*(1.0-1.0/beta) +
+              W[1]/beta, PAx[2]*(1.0-1.0/beta)+W[2]/beta]
+        fB = [PBx[0]*(1.0+1.0/beta)-W[0]/beta, PBx[1]*(1.0+1.0/beta) -
+              W[1]/beta, PBx[2]*(1.0+1.0/beta)-W[2]/beta]
+        PAfB = PA(fB)
+        s = False
+        while not s:
+            PBfA, s = PB(fA)  # not overwriting
+            if not s:
+                print("   Prz: ", id, " BP failed -> reset")
+                seed = int(time.time())+int(uuid.uuid4())+id
+                np.random.seed(seed % 135745)
+                W = roundInit(n, p)
+                numOfTries += 1
+                diffs = []
+                jumps = []
+                heights = []
+                numOfJumps = 0
+                minDiff = 99999
+                maxDiff = -99999
+                inBand = 0
+                i = 0
+        delta = beta*[PAfB[0]-PBfA[0], PAfB[1]-PBfA[1], PAfB[2]-PBfA[2]]
+
         W = [W[0]+delta[0], W[1]+delta[1], W[2]+delta[2]]
         norm2Delta = np.linalg.norm(
             delta[0], 2)**2+np.linalg.norm(delta[1], 2)**2+np.linalg.norm(delta[2], 2)**2

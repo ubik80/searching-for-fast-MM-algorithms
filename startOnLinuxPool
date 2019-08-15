@@ -9,4 +9,11 @@ do
   osascript -e "tell application \"Terminal\" to do script \"$toRun\""
 done
 
-#ssh -t ve73yen@ppc820.mirz.uni-jena.de 'python3 findBackpropParams_n3_V1.py'
+for i in `seq 11 19`;
+do
+  num=$(printf "%02d" $i)
+  toRun="ssh -t ve73yen@ppc8$num.mirz.uni-jena.de 'python3 heurSearchParallel_n_5_V6.py'"
+  osascript -e "tell application \"Terminal\" to do script \"$toRun\""
+done
+
+ssh -t ve73yen@ppc820.mirz.uni-jena.de 'python3 findBackpropParams_n3_V1.py'
