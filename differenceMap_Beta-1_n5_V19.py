@@ -108,7 +108,7 @@ def roundInit(n, p):
         Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
-        success = biM.backpropNueABC2(Wa, Wb, Wc, 50000000*0+3000000,
+        success = biM.backpropNueABC2(Wa, Wb, Wc, 30000000,
                                       0.01, 0.05, 0.05, 0.1, 0.0001, 10000)
         print("roundInit - success=", success)
     print("roundInit - Initialisierung erfolgreich")
@@ -171,8 +171,7 @@ def diffMap(id, mutex):
     p = 23  # 112  # 105
     n = 3  # 5
     nn = int(n**2)
-    beta = -1.0
-    print("n: ", n, "     p: ", p, "     beta: ", beta)
+    print("n: ", n, "     p: ", p, "     beta: -1")
     seed = int(time.time())+int(uuid.uuid4())+id
     np.random.seed(seed % 135790)
     W = roundInit(n, p)
@@ -190,10 +189,11 @@ def diffMap(id, mutex):
     bandWith = 10
 
     while True:
-        failed = False
-        PBx, s = PB(W)
+        PAx = PA(W)
+        fA = [2*PAx[0]-W[0], 2*PAx[1]-W[1], 2*PAx[2]-W[2]]
+        PBfA, s = PB(fA)
         if not s:
-            print("   Prz: ", id, " BPx failed -> reset")
+            print("   Prz: ", id, " BPfA failed -> reset")
             seed = int(time.time())+int(uuid.uuid4())+id
             np.random.seed(seed % 135745)
             W = roundInit(n, p)
@@ -206,32 +206,8 @@ def diffMap(id, mutex):
             maxDiff = -99999
             inBand = 0
             i = 0
-            failed = True
-        if not failed:
-            PAx = PA(W)
-            fA = [PAx[0]*(1.0-1.0/beta)+W[0]/beta, PAx[1]*(1.0-1.0/beta) +
-                  W[1]/beta, PAx[2]*(1.0-1.0/beta)+W[2]/beta]
-            fB = [PBx[0]*(1.0+1.0/beta)-W[0]/beta, PBx[1]*(1.0+1.0/beta) -
-                  W[1]/beta, PBx[2]*(1.0+1.0/beta)-W[2]/beta]
-            PAfB = PA(fB)
-            PBfA, s = PB(fA)
-            if not s:
-                print("   Prz: ", id, " BPfA failed -> reset")
-                seed = int(time.time())+int(uuid.uuid4())+id
-                np.random.seed(seed % 135745)
-                W = roundInit(n, p)
-                numOfTries += 1
-                diffs = []
-                jumps = []
-                heights = []
-                numOfJumps = 0
-                minDiff = 99999
-                maxDiff = -99999
-                inBand = 0
-                i = 0
-                failed = True
-        if not failed:
-            delta = [(PAfB[0]-PBfA[0])*beta, (PAfB[1]-PBfA[1])*beta, (PAfB[2]-PBfA[2])*beta]
+        else:
+            delta = [PBfA[0]-PAx[0], PBfA[1]-PAx[1], PBfA[2]-PAx[2]]
             W = [W[0]+delta[0], W[1]+delta[1], W[2]+delta[2]]
             norm2Delta = np.linalg.norm(
                 delta[0], 2)**2+np.linalg.norm(delta[1], 2)**2+np.linalg.norm(delta[2], 2)**2

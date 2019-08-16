@@ -21,7 +21,7 @@ fileNames = []
 # fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V17DiffMap")
 # fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V18DiffMap")
 # fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V19DiffMap")
-fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V20DiffMap")
+#fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V20DiffMap")
 fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V21DiffMap")
 
 ff = []
@@ -55,10 +55,12 @@ numOfSolutions = 0
 for f in fileNames:
     fileContent = np.load(f, allow_pickle=True)
 
-    if 'numpy' in str(type(fileContent[0])):  # and fileContent[9] != -1:
+    if 'numpy.ndarray' in str(type(fileContent[0])):
         correct = cs.checkSolutionInt([fileContent[0], fileContent[1], fileContent[2]])
+        #print("solution not correct")
     else:
         correct = False
+        #print("no matrix found ...")
     if correct:
         Wa = np.matrix(fileContent[0], dtype=int)
         Wb = np.matrix(fileContent[1], dtype=int)

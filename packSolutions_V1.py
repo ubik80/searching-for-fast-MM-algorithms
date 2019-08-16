@@ -22,24 +22,22 @@ fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V21DiffMap")
 
 ff = []
 for f in fileNames:
-    if ".npy" in f:
+    if ".npy" in f and not "5000" in f:
         ff.append(f)
 fileNames = ff
-ff = []
-for f in fileNames:
-    if not "5000" in f:
-        ff.append(f)
-fileNames = ff
+# ff = []
+# for f in fileNames:
+#     if not "5000" in f:
+#         ff.append(f)
+# fileNames = ff
 
 numOfSolutions = 0
-
 solutions = []
 
 for f in fileNames:
     fileContent = np.load(f, allow_pickle=True)
-    print(f)
 
-    if 'numpy' in str(type(fileContent[0])):
+    if 'numpy.ndarray' in str(type(fileContent[0])):
         if len(fileContent) >= 10:
             if fileContent[9] < 0:
                 correct = False
@@ -51,6 +49,7 @@ for f in fileNames:
         correct = False
 
     if correct:
+        print(f)
         numOfSolutions += 1
         Wa = np.matrix(fileContent[0], dtype=int)
         Wb = np.matrix(fileContent[1], dtype=int)
@@ -71,6 +70,6 @@ np.save("solutions_n3", solutions)
 
 ##############################################
 
-S = np.load("solutions_n3.npy", allow_pickle=True)
-s = S[13]
-s[3]
+# S = np.load("solutions_n3.npy", allow_pickle=True)
+# s = S[13]
+# s[3]
