@@ -13,14 +13,14 @@ def listdir_fullpath(d):
 
 
 fileNames = []
-fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/alteVersionenDiffMap")
-fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/heuristik")
-fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V14DiffMap")
-fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V15DiffMap")
-fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V16DiffMap")
-fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V17DiffMap")
-fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V18DiffMap")
-fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V19DiffMap")
+# fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/alteVersionenDiffMap")
+# fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/heuristik")
+# fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V14DiffMap")
+# fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V15DiffMap")
+# fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V16DiffMap")
+# fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V17DiffMap")
+# fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V18DiffMap")
+# fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V19DiffMap")
 fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V20DiffMap")
 fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V21DiffMap")
 
@@ -55,7 +55,7 @@ numOfSolutions = 0
 for f in fileNames:
     fileContent = np.load(f, allow_pickle=True)
 
-    if 'numpy' in str(type(fileContent[0])) and fileContent[9] != -1:
+    if 'numpy' in str(type(fileContent[0])):  # and fileContent[9] != -1:
         correct = cs.checkSolutionInt([fileContent[0], fileContent[1], fileContent[2]])
     else:
         correct = False

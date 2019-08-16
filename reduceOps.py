@@ -106,7 +106,6 @@ def optimizeAddsSubs(M, maxLength):
     assembly = []
     commonExpr = []
     exprList = M
-    #recursionLevel = 0
     while True:
         M = np.matrix(exprList)
         exprList = buildExprList(M, maxLength)
@@ -119,7 +118,6 @@ def optimizeAddsSubs(M, maxLength):
             break
         assembly.append(A)
         commonExpr.append(exprList)
-        #recursionLevel += 1
     return assembly, commonExpr
 
 
