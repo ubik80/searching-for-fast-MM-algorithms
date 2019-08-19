@@ -72,4 +72,4 @@ np.save("solutions_n3", solutions)
 
 # S = np.load("solutions_n3.npy", allow_pickle=True)
 # s = S[13]
-# s[3]
+# s[12]

@@ -64,3 +64,19 @@ plt.ylabel("η c*")
 plt.title("num. of iterations, n=3")
 os.chdir("/Users/tillspaeth/Desktop/Masterarbeit/Ausarbeitung")
 plt.savefig('backpropParams_n3.png', dpi=300)
+plt.close()
+
+smoothCosts = np.zeros([costs.shape[0]-2, costs.shape[1]-2])
+for i in range(1, costs.shape[0]-1):
+    for j in range(1, costs.shape[1]-1):
+        filt = costs[i-1:i+2, j-1:j+2]/smpls[i-1:i+2, j-1:j+2]
+        smoothCosts[i-1, j-1] = np.mean(filt)
+
+plt.contourf(nueC[1:len(nueC)-1], nueAB[1:len(nueAB)-1], smoothCosts)
+plt.plot(optNueC, optNueAB, color='red', marker='o', markersize=10)
+plt.colorbar()
+plt.xlabel("η c")
+plt.ylabel("η c*")
+plt.title("num. of iterations, n=3")
+os.chdir("/Users/tillspaeth/Desktop/Masterarbeit/Ausarbeitung")
+plt.savefig('backpropParams_smooth_n3.png', dpi=300)

@@ -22,11 +22,11 @@ def PB(W):  # copy / not overwriting
     WaRet = []
     WbRet = []
     WcRet = []
-    for tries in range(3):
+    for tries in range(6):
         Wa = W[0].copy()
         Wb = W[1].copy()
         Wc = W[2].copy()
-        success = biM.backpropNueABC2(Wa, Wb, Wc, 30000000, 0.01, 0.05, 0.05, 0.1, 0.01, 1000)
+        success = biM.backpropNueABC2(Wa, Wb, Wc, 30000000, 0.01, 0.05, 0.05, 0.1, 0.0001, 10000)
         if success > 0:
             dist = np.linalg.norm(Wa-W[0], 2)**2+np.linalg.norm(Wb-W[1],
                                                                 2)**2+np.linalg.norm(Wc-W[2], 2)**2
@@ -141,7 +141,7 @@ def roundInit(n, p):
             TC[i, j] = 0
             MC[i, j] = 0
             WcT[i, j] = np.minimum(np.maximum(np.round(WcT[i, j]), -1), 1)
-        success = biM.backpropNueM2(WaT, WbT, WcT, MA, MB, MC, 300000,
+        success = biM.backpropNueM2(WaT, WbT, WcT, MA, MB, MC, 3000000,
                                     0.01, 0.05, 0.05, 0.1, 0.0001, 10000)
         if success > 0:
             Wa = WaT
@@ -168,8 +168,8 @@ def roundInit(n, p):
 
 
 def diffMap(id, mutex):
-    p = 23  # 112  # 105
-    n = 3  # 5
+    p = 112  # 105
+    n = 5
     nn = int(n**2)
     print("n: ", n, "     p: ", p, "     beta: -1")
     seed = int(time.time())+int(uuid.uuid4())+id
