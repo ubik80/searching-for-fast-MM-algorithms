@@ -168,7 +168,7 @@ def roundInit(n, p):
 
 
 def diffMap(id, mutex):
-    p = 112  # 105
+    p = 111  # 112
     n = 5
     nn = int(n**2)
     print("n: ", n, "     p: ", p, "     beta: -1")
@@ -186,7 +186,7 @@ def diffMap(id, mutex):
     minDiff = 99999
     maxDiff = -99999
     inBand = 0
-    bandWith = 10
+    bandWith = 5
 
     while True:
         PAx = PA(W)

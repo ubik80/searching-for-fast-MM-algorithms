@@ -3,6 +3,8 @@ import backprop as bp
 import matplotlib.pyplot as plt
 import os
 
+os.chdir("/Users/tillspaeth/Desktop/Masterarbeit/searching-for-fast-MM-algorithms")
+
 n = 2
 p = 7
 nn = n**2
@@ -46,8 +48,8 @@ costs, fails, smpls = np.load("backprop_n_2_params.npy", allow_pickle=True)
 #     if workDone:
 #         np.save("backprop_n_2_params", [costs, fails, smpls])
 
-opt = np.argmin(costs)
-i = int(np.floor(opt/costs.shape[0]))
+opt = np.argmin(costs / smpls)
+i = int(np.floor(opt/costs.shape[1]))
 j = opt-i*costs.shape[1]
 optNueAB = nueAB[i]
 optNueC = nueC[j]

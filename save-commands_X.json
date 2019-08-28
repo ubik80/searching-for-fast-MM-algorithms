@@ -1,6 +1,0 @@
-{
-    "commands": [
-        "*.py : scp {relFullPath} ve73yen@ppc811.mirz.uni-jena.de:~/",
-        "*.py : rm -f -r __pycache__ || true"
-    ]
-}

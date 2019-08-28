@@ -12,7 +12,7 @@ A, L = ro.optimizeAddsSubs(Wc, 5000)
 R = ro.calcResiduals(A, L, Wc)
 
 len(A)
-M = R[2]
+M = R[0]
 
 latexString = "\\begin{bmatrix}"
 for i in range(M.shape[0]):
@@ -30,3 +30,26 @@ for i in range(M.shape[0]):
 latexString += "\\end{bmatrix}"
 
 print(latexString)
+
+for i in range(Wa.shape[0]):
+    for ii in range(i+1, Wa.shape[0]):
+        if np.array_equal(Wa[i, :], Wa[ii, :]):
+            print("FOUND in Wa!!!")
+            print("Wa: ", i, " <-> ", ii)
+            print(Wa[i, :])
+            print(Wa[ii, :])
+            print("Wb:")
+            print(Wb[i, :])
+            print(Wb[ii, :])
+            print("--------------------------------")
+for i in range(Wb.shape[0]):
+    for ii in range(i+1, Wb.shape[0]):
+        if np.array_equal(Wb[i, :], Wb[ii, :]):
+            print("FOUND in Wb!!!")
+            print("Wb: ", i, " <-> ", ii)
+            print(Wb[i, :])
+            print(Wb[ii, :])
+            print("Wa:")
+            print(Wa[i, :])
+            print(Wa[ii, :])
+            print("--------------------------------")
