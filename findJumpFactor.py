@@ -98,12 +98,11 @@ for f in itersWithFactorAll:
 s = np.argsort(np.array(x))
 
 fig, ax1 = plt.subplots()
-ax1.plot(np.array(x)[s], np.array(m)[s], '-')  # , color='red')
-# ax1.plot(np.array(x)[s], np.array(l)[s], '-.')
-# ax1.plot(np.array(x)[s], np.array(u)[s], '-.')
+plt.rcParams.update({'font.size': 14})
+ax1.plot(np.array(x)[s], np.array(m)[s], '-')
 ax1.set_xticks([0.1*i for i in range(0, 11)])
-ax1.set_xlabel("jump factor (blue)")
-ax1.set_ylabel("avg. num. iterations")
+ax1.set_xlabel("jump factor")
+ax1.set_ylabel("avg. num. iterations (blue)")
 
 ax2 = ax1.twinx()
 x = []
@@ -116,6 +115,6 @@ ax2.plot(np.array(x)[s], np.array(y)[s], '-', color='green')
 ax2.set_ylabel("% failed runs (green)")
 plt.title("num. of iterations, n=3")
 
-os.chdir("/Users/tillspaeth/Desktop/Masterarbeit/Ausarbeitung")
-plt.savefig('factorItersGraph.png', dpi=300)
+plt.savefig("/Users/tillspaeth/Desktop/Masterarbeit/Ausarbeitung/factorItersGraph.png",
+            dpi=300,  bbox_inches='tight')
 plt.close()

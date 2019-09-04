@@ -22,11 +22,11 @@ def PB(W):  # copy / not overwriting
     WaRet = []
     WbRet = []
     WcRet = []
-    for tries in range(6):
+    for tries in range(3):
         Wa = W[0].copy()
         Wb = W[1].copy()
         Wc = W[2].copy()
-        success = biM.backpropNueABC2(Wa, Wb, Wc, 30000000, 0.01, 0.05, 0.05, 0.1, 0.0001, 10000)
+        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1, 0.01)  # tol=0.01, eta=0.1
         if success > 0:
             dist = np.linalg.norm(Wa-W[0], 2)**2+np.linalg.norm(Wb-W[1],
                                                                 2)**2+np.linalg.norm(Wc-W[2], 2)**2
@@ -104,15 +104,10 @@ def roundInit(n, p):
     nn = int(n**2)
     success = -1
     while success < 0:
-        print("roundInit - Initialisierung ...")
         Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
-        success = biM.backpropNueABC2(Wa, Wb, Wc, 30000000,
-                                      0.01, 0.05, 0.05, 0.1, 0.0001, 10000)
-        print("roundInit - success=", success)
-    print("roundInit - Initialisierung erfolgreich")
-
+        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1, 0.01)  # 0.1,0.01
     MA = np.ones(Wa.shape)
     MB = np.ones(Wb.shape)
     MC = np.ones(Wc.shape)
@@ -121,7 +116,6 @@ def roundInit(n, p):
     TC = np.ones(Wc.shape)
     ei = np.zeros(nn, dtype=float)
     rounds = 0
-    noRoundForIters = 0
     while True:
         i, j, err, matSel = findWeight(Wa, Wb, Wc, TA, TB, TC, ei)
         if i < 0:
@@ -141,15 +135,12 @@ def roundInit(n, p):
             TC[i, j] = 0
             MC[i, j] = 0
             WcT[i, j] = np.minimum(np.maximum(np.round(WcT[i, j]), -1), 1)
-        success = biM.backpropNueM2(WaT, WbT, WcT, MA, MB, MC, 3000000,
-                                    0.01, 0.05, 0.05, 0.1, 0.0001, 10000)
+        success = biM.backpropM(WaT, WbT, WcT, MA, MB, MC, 100000, 0.1, 0.01)
         if success > 0:
             Wa = WaT
             Wb = WbT
             Wc = WcT
             rounds += 1
-            noRoundForIters = 0
-            print("o", end=" ", flush=True)
         else:
             if matSel == 0:
                 MA[i, j] = 1
@@ -157,21 +148,14 @@ def roundInit(n, p):
                 MB[i, j] = 1
             if matSel == 2:
                 MC[i, j] = 1
-            noRoundForIters += 1
-            print("x", end=" ", flush=True)
-        if noRoundForIters > 5:
-            print("keine Rundungen mehr seit ... -> Abbruch")
-            break
     print("roundInit-Rundungen: ", str(rounds))
-    #np.save("roundInit_n5_V19"+str(time.time()), [Wa, Wb, Wc])
     return [Wa, Wb, Wc]  # roundInit
 
 
 def diffMap(id, mutex):
-    p = 46  # 112
-    n = 4
+    p = 23
+    n = 3
     nn = int(n**2)
-    print("n: ", n, "     p: ", p, "     beta: -1")
     seed = int(time.time())+int(uuid.uuid4())+id
     np.random.seed(seed % 135790)
     W = roundInit(n, p)
@@ -189,84 +173,13 @@ def diffMap(id, mutex):
     bandWith = 10
 
     while True:
-        PAx = PA(W)
-        fA = [2*PAx[0]-W[0], 2*PAx[1]-W[1], 2*PAx[2]-W[2]]
-        PBfA, s = PB(fA)
-        if not s:
-            print("   Prz: ", id, " BPfA failed -> reset")
-            seed = int(time.time())+int(uuid.uuid4())+id
-            np.random.seed(seed % 135745)
-            W = roundInit(n, p)
-            numOfTries += 1
-            diffs = []
-            jumps = []
-            heights = []
-            numOfJumps = 0
-            minDiff = 99999
-            maxDiff = -99999
-            inBand = 0
-            i = 0
-        else:
-            delta = [PBfA[0]-PAx[0], PBfA[1]-PAx[1], PBfA[2]-PAx[2]]
-            W = [W[0]+delta[0], W[1]+delta[1], W[2]+delta[2]]
-            norm2Delta = np.linalg.norm(
-                delta[0], 2)**2+np.linalg.norm(delta[1], 2)**2+np.linalg.norm(delta[2], 2)**2
-            norm2Delta = np.sqrt(norm2Delta)
-            diffs.append(norm2Delta)
-
-            if norm2Delta < 0.5:
-                mutex.acquire()
-                print(id, ", Lösung gefunden?")
-                WW = PA(PB(W)[0])
-                c2 = cs.checkSolutionInt(WW)
-                if c2:
-                    print(id, ".... Lösung korrekt")
-                    mutex.release()
-                    np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time())+"_"+"V19",
-                            [WW[0], WW[1], WW[2], jumpFactor, diffs, jumps, heights, i, 0, numOfTries])
-                    W = roundInit(n, p)
-                    numOfTries = 0
-                    diffs = []
-                    jumps = []
-                    heights = []
-                    numOfJumps = 0
-                    minDiff = 99999
-                    maxDiff = -99999
-                    inBand = 0
-                    i = 0
-                else:
-                    print(id, ".... keine gültige Lösung")
-                    mutex.release()
-
-            mutex.acquire()
-            if i % 1 == 0 and i > 0:
-                print("---------------------------")
-                print("Prozess:", id)
-                print("Iter.:  ", i)
-                print("Delta:  ", norm2Delta)
-                print("Jumps:  ", numOfJumps)
-            if i > maxNumIters:
-                print(i, " cycles -> Reset")
-                print("tries:", numOfTries)
-            mutex.release()
-
-            if len(diffs) > bandWith:
-                minDiff = min(diffs[max(len(diffs)-bandWith, 0): len(diffs)])
-                maxDiff = max(diffs[max(len(diffs)-bandWith, 0): len(diffs)])
-            if norm2Delta > minDiff and norm2Delta < maxDiff:
-                inBand += 1
-            else:
-                inBand = 0
-            if inBand > bandWith:
-                W[0] += (np.random.rand(p*nn).reshape([p, nn])*2.0-1.0)*jumpFactor
-                W[1] += (np.random.rand(p*nn).reshape([p, nn])*2.0-1.0)*jumpFactor
-                W[2] += (np.random.rand(p*nn).reshape([nn, p])*2.0-1.0)*jumpFactor
-                jumps.append(i)
-                heights.append(1)
-                numOfJumps += 1
-            if i > maxNumIters:
+        s = False
+        while not s:
+            PBx, s = PB(W)  # not overwriting
+            if not s:
+                print("   Prz: ", id, " BP failed -> reset")
                 seed = int(time.time())+int(uuid.uuid4())+id
-                np.random.seed(seed % 135790)
+                np.random.seed(seed % 135745)
                 W = roundInit(n, p)
                 numOfTries += 1
                 diffs = []
@@ -277,7 +190,78 @@ def diffMap(id, mutex):
                 maxDiff = -99999
                 inBand = 0
                 i = 0
-            i += 1
+        PAy = PA([2.0*PBx[0]-W[0], 2.0*PBx[1]-W[1], 2.0*PBx[2]-W[2]])
+        delta = [PAy[0]-PBx[0], PAy[1]-PBx[1], PAy[2]-PBx[2]]
+        W = [W[0]+delta[0], W[1]+delta[1], W[2]+delta[2]]
+        norm2Delta = np.linalg.norm(
+            delta[0], 2)**2+np.linalg.norm(delta[1], 2)**2+np.linalg.norm(delta[2], 2)**2
+        norm2Delta = np.sqrt(norm2Delta)
+        diffs.append(norm2Delta)
+
+        if norm2Delta < 0.5:
+            mutex.acquire()
+            print(id, ", Lösung gefunden?")
+            WW = PA(PB(W)[0])  # PA is overwriting, but PB is not
+            c2 = cs.checkSolutionInt(WW)
+            if c2:
+                print(id, ".... Lösung korrekt")
+                mutex.release()
+                np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time())+"_"+"V25",
+                        [WW[0], WW[1], WW[2], jumpFactor, diffs, jumps, heights, i, 0, numOfTries])
+                W = roundInit(n, p)
+                numOfTries = 0
+                diffs = []
+                jumps = []
+                heights = []
+                numOfJumps = 0
+                minDiff = 99999
+                maxDiff = -99999
+                inBand = 0
+                i = 0
+            else:
+                print(id, ".... keine gültige Lösung")
+                mutex.release()
+
+        mutex.acquire()
+        if i % 100 == 0 and i > 0:
+            print("---------------------------")
+            print("Prozess:", id)
+            print("Iter.:  ", i)
+            print("Delta:  ", norm2Delta)
+            print("Jumps:  ", numOfJumps)
+        if i > maxNumIters:  # and norm2Delta > 3.0:
+            print(i, " cycles -> Reset")
+            print("tries:", numOfTries)
+        mutex.release()
+
+        if len(diffs) > bandWith:
+            minDiff = min(diffs[max(len(diffs)-bandWith, 0): len(diffs)])
+            maxDiff = max(diffs[max(len(diffs)-bandWith, 0): len(diffs)])
+        if norm2Delta > minDiff and norm2Delta < maxDiff:
+            inBand += 1
+        else:
+            inBand = 0
+        if inBand > 6:
+            W[0] += (np.random.rand(p*nn).reshape([p, nn])*2.0-1.0)*jumpFactor
+            W[1] += (np.random.rand(p*nn).reshape([p, nn])*2.0-1.0)*jumpFactor
+            W[2] += (np.random.rand(p*nn).reshape([nn, p])*2.0-1.0)*jumpFactor
+            jumps.append(i)
+            heights.append(1)
+            numOfJumps += 1
+        if i > maxNumIters:  # and norm2Delta > 3.0:
+            seed = int(time.time())+int(uuid.uuid4())+id
+            np.random.seed(seed % 135790)
+            W = roundInit(n, p)
+            numOfTries += 1
+            diffs = []
+            jumps = []
+            heights = []
+            numOfJumps = 0
+            minDiff = 99999
+            maxDiff = -99999
+            inBand = 0
+            i = 0
+        i += 1
     return  # diffMap
 
 

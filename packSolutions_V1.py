@@ -19,6 +19,7 @@ fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V18DiffMap")
 fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V19DiffMap")
 fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V20DiffMap")
 fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V21DiffMap")
+fileNames += listdir_fullpath("/Users/tillspaeth/Google Drive/V25DiffMap")
 
 ff = []
 for f in fileNames:

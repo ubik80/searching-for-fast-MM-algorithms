@@ -9,38 +9,55 @@ import checkSolution as cs
 np.set_printoptions(precision=2, suppress=True)
 
 
-def PA(W):  # no copy / overwriting !
+def PA(W):
     W[0] = np.minimum(np.maximum(np.round(W[0]), -1.0), 1.0)
     W[1] = np.minimum(np.maximum(np.round(W[1]), -1.0), 1.0)
     W[2] = np.minimum(np.maximum(np.round(W[2]), -1.0), 1.0)
     return W  # PA
 
 
-def PB(W):  # copy / not overwriting
-    minDist = 99999.9
-    solFound = False
-    WaRet = []
-    WbRet = []
-    WcRet = []
-    for tries in range(3):
-        Wa = W[0].copy()
-        Wb = W[1].copy()
-        Wc = W[2].copy()
-        # success = biM.backpropNueABC2(Wa, Wb, Wc, 30000000, 0.03, 0.05,
-        #                               0.05, 0.1, 0.0001, 10000)
-        success = biM.backprop(Wa, Wb, Wc, 30000000, 0.1, 0.01)
-        if success > 0:
-            dist = np.linalg.norm(Wa-W[0], 2)**2+np.linalg.norm(Wb-W[1],
-                                                                2)**2+np.linalg.norm(Wc-W[2], 2)**2
-            if dist < minDist:
-                solFound = True
-                minDist = dist
-                WaRet = Wa
-                WbRet = Wb
-                WcRet = Wc
-    if solFound:
-        return [WaRet, WbRet, WcRet], True
-    return W, False  # PB
+def PB(W):
+    nn = W[0].shape[1]
+    p = W[0].shape[0]
+    n = int(np.sqrt(nn))
+    numOfProc = int(mp.cpu_count())
+    WAs = [mp.RawArray('d', W[0].reshape(nn*p)) for i in range(numOfProc)]
+    WBs = [mp.RawArray('d', W[1].reshape(nn*p)) for i in range(numOfProc)]
+    WCs = [mp.RawArray('d', W[2].reshape(nn*p)) for i in range(numOfProc)]
+
+    def backprop(WaMP, WbMP, WcMP, nn, p, i):
+        Wa = np.frombuffer(WaMP, dtype='d').reshape([p, nn])
+        Wb = np.frombuffer(WbMP, dtype='d').reshape([p, nn])
+        Wc = np.frombuffer(WcMP, dtype='d').reshape([nn, p])
+        biM.backpropRND(Wa, Wb, Wc, 30000000, 0.1, 0.01, i)
+        return  # backprop
+
+    procs = [mp.Process(target=backprop, args=(WAs[i], WBs[i], WCs[i], nn, p, i))
+             for i in range(numOfProc)]
+    for pp in procs:
+        pp.start()
+    for pp in procs:
+        pp.join()
+
+    WAs = [np.frombuffer(WAs[i], dtype='d').reshape([p, nn]) for i in range(numOfProc)]
+    WBs = [np.frombuffer(WBs[i], dtype='d').reshape([p, nn]) for i in range(numOfProc)]
+    WCs = [np.frombuffer(WCs[i], dtype='d').reshape([nn, p]) for i in range(numOfProc)]
+
+    minDist = 999.9
+    WaRet, WbRet, WcRet = W
+    success = False
+    for i in range(numOfProc):
+        if np.isnan(WAs[i].any()) or np.isnan(WBs[i].any()) or np.isnan(WCs[i].any()):
+            dist = 999.9
+        else:
+            dist = np.linalg.norm(WAs[i]-W[0], 2)**2+np.linalg.norm(WBs[i]-W[1],
+                                                                    2)**2+np.linalg.norm(WCs[i]-W[2], 2)**2
+        # print(dist)
+        if dist < minDist:
+            minDist = dist
+            WaRet, WbRet, WcRet = WAs[i], WBs[i], WCs[i]
+            success = True
+    return [WaRet, WbRet, WcRet], success
 
 
 @jit(nopython=True, nogil=True, cache=True)
@@ -113,7 +130,6 @@ def roundInit(n, p):
         success = biM.backprop(Wa, Wb, Wc, 30000000, 0.1, 0.01)
         print("roundInit - success=", success)
     print("roundInit - Initialisierung erfolgreich")
-
     MA = np.ones(Wa.shape)
     MB = np.ones(Wb.shape)
     MC = np.ones(Wc.shape)
@@ -167,9 +183,7 @@ def roundInit(n, p):
     return [Wa, Wb, Wc]  # roundInit
 
 
-def diffMap(id, mutex):
-    p = 111  # 112
-    n = 5
+def diffMap(n, p, id):
     nn = int(n**2)
     print("n: ", n, "     p: ", p, "     beta: -1")
     seed = int(time.time())+int(uuid.uuid4())+id
@@ -215,16 +229,13 @@ def diffMap(id, mutex):
                 delta[0], 2)**2+np.linalg.norm(delta[1], 2)**2+np.linalg.norm(delta[2], 2)**2
             norm2Delta = np.sqrt(norm2Delta)
             diffs.append(norm2Delta)
-
             if norm2Delta < 1.0:
-                mutex.acquire()
                 print(id, ", Lösung gefunden?")
                 WW = PA(PB(W)[0])
                 c2 = cs.checkSolutionInt(WW)
                 if c2:
                     print(id, ".... Lösung korrekt")
-                    mutex.release()
-                    np.save("solution_"+str(n)+"_"+str(p)+"_"+str(i)+"_"+str(time.time())+"_"+"V24",
+                    np.save("solution_"+str(n)+"_"+str(p)+"_"+str(i)+"_"+str(time.time())+"_"+"V25",
                             [WW[0], WW[1], WW[2], jumpFactor, diffs, jumps, heights, i, 0, numOfTries])
                     W = roundInit(n, p)
                     numOfTries = 0
@@ -239,20 +250,12 @@ def diffMap(id, mutex):
                     i = 0
                 else:
                     print(id, ".... keine gültige Lösung")
-                    mutex.release()
-
-            mutex.acquire()
             if i % 1 == 0 and i > 0:
                 print("---------------------------")
                 print("Prozess:", id)
                 print("Iter.:  ", i)
                 print("Delta:  ", norm2Delta)
                 print("Jumps:  ", numOfJumps)
-            if i > maxNumIters:
-                print(i, " cycles -> Reset")
-                print("tries:", numOfTries)
-            mutex.release()
-
             if len(diffs) > bandWith:
                 minDiff = min(diffs[max(len(diffs)-bandWith, 0): len(diffs)])
                 maxDiff = max(diffs[max(len(diffs)-bandWith, 0): len(diffs)])
@@ -269,6 +272,8 @@ def diffMap(id, mutex):
                 numOfJumps += 1
                 oldDelta = 999.9
             if i > maxNumIters:
+                print(i, " cycles -> Reset")
+                print("tries:", numOfTries)
                 seed = int(time.time())+int(uuid.uuid4())+id
                 np.random.seed(seed % 135790)
                 W = roundInit(n, p)
@@ -288,16 +293,7 @@ def diffMap(id, mutex):
 
 
 if __name__ == '__main__':
-    numOfProc = int(mp.cpu_count())
-    print("Anzahl Prozessoren: ", numOfProc)
-
-    mutex = mp.Lock()
-    procs = [mp.Process(target=diffMap, args=(i, mutex)) for i in range(numOfProc)]
-
-    for pp in procs:
-        pp.start()
-    for pp in procs:
-        pp.join()
+    diffMap(n=3, p=23, id=0)
 
 
 #

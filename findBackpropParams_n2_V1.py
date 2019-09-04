@@ -23,9 +23,6 @@ steps = 100
 nueAB = [minNueAB+(maxNueAB-minNueAB)/steps*i for i in range(0, steps + 1)]
 nueC = [minNueC+(maxNueC-minNueC)/steps*i for i in range(0, steps + 1)]
 
-# costs = np.zeros([len(nueAB), len(nueC)])
-# fails = np.zeros([len(nueAB), len(nueC)])
-# smpls = np.zeros([len(nueAB), len(nueC)])
 costs, fails, smpls = np.load("backprop_n_2_params.npy", allow_pickle=True)
 
 # workDone = True
@@ -56,6 +53,7 @@ optNueC = nueC[j]
 print(optNueAB, optNueC, " -> ", costs[i, j]/smpls[i, j])
 print("finished")
 
+plt.rcParams.update({'font.size': 14})
 plt.contourf(nueC, nueAB, costs/smpls, 1000, vmin=10000, vmax=maxIters)
 plt.plot(optNueC, optNueAB, color='red', marker='o', markersize=10)
 plt.colorbar(ticks=[2000*i for i in range(5, 13)])

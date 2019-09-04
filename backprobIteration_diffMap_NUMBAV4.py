@@ -80,17 +80,18 @@ if __name__ == '__main__':
         M = np.ones(Wc.shape)
 
         start = time. time()
-        Wa, Wb, Wc, errHist, success = findCalcRule(n, p, 3000000, Wa, Wb, Wc, 0.01, 0.1)
+        Wa, Wb, Wc, errHist, success = findCalcRule(n, p, 2000000, Wa, Wb, Wc, 0.01, 0.1)
         cs.checkSolutionReal([Wa, Wb, Wc])
         end = time. time()
         print("time: ", end - start)
         print(success)
 
-    plt.rcParams.update({'font.size': 10})
+    plt.rcParams.update({'font.size': 14})
     plt.plot(errHist)
+    plt.xticks(np.arange(0, len(errHist), step=250000))
     plt.xlabel('iteration')
     plt.ylabel('| deviation |')
-    plt.axis([0, 1500000, 0, 1])
+    plt.axis([0, 2000000, 0, 1])
 
     if success:
-        plt.savefig('backpropTrendXXX.png', dpi=300)
+        plt.savefig('/Users/tillspaeth/Desktop/Masterarbeit/Ausarbeitung/backpropTrend_2.png', dpi=300)

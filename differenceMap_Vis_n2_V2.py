@@ -26,8 +26,7 @@ def PB(W):  # copy / not overwriting
         Wa = W[0].copy()
         Wb = W[1].copy()
         Wc = W[2].copy()
-        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1, 0.01)  # tol=0.01, eta=0.1
-        #success = biM.backpropNue(Wa, Wb, Wc, 3000000, 0.01, 0.1, 0.2)
+        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1, 0.01)
         if success > 0:
             dist = np.linalg.norm(Wa-W[0], 2)**2+np.linalg.norm(Wb-W[1],
                                                                 2)**2+np.linalg.norm(Wc-W[2], 2)**2
@@ -102,13 +101,15 @@ def findWeight(Wa, Wb, Wc, MA, MB, MC, ei):
 
 
 def roundInit(n, p):
+    Wa, Wb, Wc = np.load("roundedStartVals_n2.npy", allow_pickle=True)
+    return [Wa, Wb, Wc]
     nn = int(n**2)
     success = -1
     while success < 0:
         Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
-        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1, 0.01)  # 0.1,0.01
+        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1, 0.01)
     MA = np.ones(Wa.shape)
     MB = np.ones(Wb.shape)
     MC = np.ones(Wc.shape)
@@ -149,13 +150,13 @@ def roundInit(n, p):
                 MB[i, j] = 1
             if matSel == 2:
                 MC[i, j] = 1
-    print("roundInit-Rundungen: ", str(rounds))
+    #np.save("roundedStartVals_n2", [Wa, Wb, Wc])
     return [Wa, Wb, Wc]  # roundInit
 
 
 def diffMap(id, mutex):
-    p = 23
-    n = 3
+    p = 7
+    n = 2
     nn = int(n**2)
     seed = int(time.time())+int(uuid.uuid4())+id
     np.random.seed(seed % 135790)
@@ -166,12 +167,15 @@ def diffMap(id, mutex):
     jumps = []  # indices of jumps
     heights = []
     numOfJumps = 0
-    maxNumIters = 5000
-    jumpFactor = 0.25
+    maxNumIters = 1000
+    minNumIters = 50
+    jumpFactor = 0.3
     minDiff = 99999
     maxDiff = -99999
     inBand = 0
     bandWith = 10
+
+    WHist = [[W[0], W[1], W[2], False, -1]]
 
     while True:
         s = False
@@ -184,6 +188,7 @@ def diffMap(id, mutex):
                 W = roundInit(n, p)
                 numOfTries += 1
                 diffs = []
+                WHist = [[W[0], W[1], W[2], False, -1]]
                 jumps = []
                 heights = []
                 numOfJumps = 0
@@ -199,7 +204,9 @@ def diffMap(id, mutex):
         norm2Delta = np.sqrt(norm2Delta)
         diffs.append(norm2Delta)
 
-        if norm2Delta < 0.5:
+        WHist.append([W[0], W[1], W[2], False, norm2Delta])
+
+        if norm2Delta < 0.5 and i > minNumIters:  # and numOfJumps > 5:
             mutex.acquire()
             print(id, ", Lösung gefunden?")
             WW = PA(PB(W)[0])  # PA is overwriting, but PB is not
@@ -207,21 +214,26 @@ def diffMap(id, mutex):
             if c2:
                 print(id, ".... Lösung korrekt")
                 mutex.release()
-                np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time())+"_"+"V19",
-                        [WW[0], WW[1], WW[2], jumpFactor, diffs, jumps, heights, i, 0, numOfTries])
-                W = roundInit(n, p)
-                numOfTries = 0
-                diffs = []
-                jumps = []
-                heights = []
-                numOfJumps = 0
-                minDiff = 99999
-                maxDiff = -99999
-                inBand = 0
-                i = 0
+                WHist.append([W[0], W[1], W[2], False, -2])
+                np.save("n2_vis_V2_4",
+                        [WW[0], WW[1], WW[2], diffs, WHist])
+                return
             else:
                 print(id, ".... keine gültige Lösung")
                 mutex.release()
+        # elif norm2Delta < 0.5 and i <= minNumIters:
+        #     print("Trend zu kurz")
+        #     W = roundInit(n, p)
+        #     numOfTries = 0
+        #     diffs = []
+        #     WHist = []
+        #     jumps = []
+        #     heights = []
+        #     numOfJumps = 0
+        #     minDiff = 99999
+        #     maxDiff = -99999
+        #     inBand = 0
+        #     i = 0
 
         mutex.acquire()
         if i % 100 == 0 and i > 0:
@@ -242,19 +254,21 @@ def diffMap(id, mutex):
             inBand += 1
         else:
             inBand = 0
-        if inBand > bandWith:
+        if inBand > 6:
             W[0] += (np.random.rand(p*nn).reshape([p, nn])*2.0-1.0)*jumpFactor
             W[1] += (np.random.rand(p*nn).reshape([p, nn])*2.0-1.0)*jumpFactor
             W[2] += (np.random.rand(p*nn).reshape([nn, p])*2.0-1.0)*jumpFactor
             jumps.append(i)
             heights.append(1)
             numOfJumps += 1
+            WHist.append([W[0], W[1], W[2], True, 0])
         if i > maxNumIters:  # and norm2Delta > 3.0:
             seed = int(time.time())+int(uuid.uuid4())+id
             np.random.seed(seed % 135790)
             W = roundInit(n, p)
             numOfTries += 1
             diffs = []
+            WHist = [[W[0], W[1], W[2], False, -1]]
             jumps = []
             heights = []
             numOfJumps = 0
@@ -263,11 +277,12 @@ def diffMap(id, mutex):
             inBand = 0
             i = 0
         i += 1
+
     return  # diffMap
 
 
 if __name__ == '__main__':
-    numOfProc = int(mp.cpu_count())*0+4
+    numOfProc = int(mp.cpu_count())*0+1
     print("Anzahl Prozessoren: ", numOfProc)
 
     mutex = mp.Lock()
