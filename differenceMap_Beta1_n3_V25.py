@@ -22,11 +22,11 @@ def PB(W):  # copy / not overwriting
     WaRet = []
     WbRet = []
     WcRet = []
-    for tries in range(3):
+    for tries in range(4):
         Wa = W[0].copy()
         Wb = W[1].copy()
         Wc = W[2].copy()
-        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1, 0.01)  # tol=0.01, eta=0.1
+        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.05, 0.01)  # tol=0.01, eta=0.1
         if success > 0:
             dist = np.linalg.norm(Wa-W[0], 2)**2+np.linalg.norm(Wb-W[1],
                                                                 2)**2+np.linalg.norm(Wc-W[2], 2)**2
@@ -223,7 +223,7 @@ def diffMap(id, mutex):
                 mutex.release()
 
         mutex.acquire()
-        if i % 100 == 0 and i > 0:
+        if i % 1 == 100 and i > 0:
             print("---------------------------")
             print("Prozess:", id)
             print("Iter.:  ", i)

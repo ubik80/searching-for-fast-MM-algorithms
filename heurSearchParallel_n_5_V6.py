@@ -80,7 +80,7 @@ def roundInit(n, p):
         Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
-        success = bp.backpropNueABC2(Wa, Wb, Wc, 50000000, 0.1, 0.05, 0.05, 0.1, 0.0001, 10000)
+        success = bp.backpropNue(Wa, Wb, Wc, 90000000, 0.01, 0.05, 0.1)
         print("roundInit - success=", success)
     print("roundInit - Initialisierung erfolgreich")
     MA = np.ones(Wa.shape)
@@ -111,8 +111,8 @@ def roundInit(n, p):
             TC[i, j] = 0
             MC[i, j] = 0
             WcT[i, j] = np.minimum(np.maximum(np.round(WcT[i, j]), -1), 1)
-        success = bp.backpropNueM2(WaT, WbT, WcT, MA, MB, MC, 300000,
-                                   0.1, 0.05, 0.05, 0.1, 0.0001, 10000)
+        success = bp.backpropNueM2(WaT, WbT, WcT, MA, MB, MC, 100000,
+                                   0.1, 0.2, 0.2, 0.4, 0.0001, 10000)
         if success > 0:
             Wa = WaT
             Wb = WbT
@@ -129,7 +129,7 @@ def roundInit(n, p):
                 MC[i, j] = 1
             noRoundForIters += 1
             print("x", end=" ", flush=True)
-        if noRoundForIters > 50:
+        if noRoundForIters > 100:  # 100
             print("keine Rundungen mehr seit ... -> Abbruch")
             break
     print("roundInit-Rundungen: ", str(rounds))
@@ -205,9 +205,8 @@ def intSolutionSearch(n, p, maxTries, maxNumIters, tol,
             MC[i, j] = 0.0
             Wc[i, j] = float(min(max(round(Wc[i, j]), -1.0), 1.0))
 
-        # success = bp.backpropM(Wa, Wb, Wc, MA, MB, MC, maxNumIters*iterFact, 0.01
         success = bp.backpropNueM2(Wa, Wb, Wc, MA, MB, MC, maxNumIters *
-                                   iterFact, 0.1, 0.05, 0.05, 0.1, 0.0001, 10000)
+                                   iterFact, 0.01, 0.2, 0.2, 0.4, 0.0001, 10000)
 
         iterFact = 1
 
@@ -282,12 +281,11 @@ def intSolutionSearch(n, p, maxTries, maxNumIters, tol,
 
 if __name__ == '__main__':
     start = time.time()
-    numOfProc = int(mp.cpu_count())
+    numOfProc = int(mp.cpu_count())*0+4
     print("Anzahl Prozessoren: ", numOfProc)
 
     n = 5
-    p = 112
-
+    p = 118
     nn = int(n**2)
 
     tol = 0.01
@@ -302,7 +300,7 @@ if __name__ == '__main__':
     bestMC = mp.RawArray('d', np.ones(p*nn, dtype=float))
 
     procs = [mp.Process(target=intSolutionSearch,
-                        args=(n, p, 50000000, 10000000*0+3000000, tol, bestWa, bestWb, bestWc, bestMA, bestMB, bestMC, mutex, finished, i))
+                        args=(n, p, 50000000, 30000000, tol, bestWa, bestWb, bestWc, bestMA, bestMB, bestMC, mutex, finished, i))
              for i in range(numOfProc)]
 
     for pp in procs:
