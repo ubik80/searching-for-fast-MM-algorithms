@@ -96,7 +96,7 @@ def resets(MA, MB, MC):
     return
 
 
-def intSolutionSearch(n, p, maxTries, maxNumIters, tol,
+def intSolutionSearch(n, p, maxTries, maxNumIters,
                       bestWa, bestWb, bestWc, bestMA, bestMB, bestMC, mutex, finished, id):
     seed = int(time.time())+int(uuid.uuid4())+id
     seed = seed % 135790
@@ -108,7 +108,7 @@ def intSolutionSearch(n, p, maxTries, maxNumIters, tol,
         Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
-        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1)
+        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1, 0.01)
     MA = np.ones(Wa.shape)
     MB = np.ones(Wb.shape)
     MC = np.ones(Wc.shape)
@@ -137,7 +137,7 @@ def intSolutionSearch(n, p, maxTries, maxNumIters, tol,
             MC[i, j] = 0.0
             Wc[i, j] = float(min(max(round(Wc[i, j]), -1.0), 1.0))
 
-        success = biM.backpropM(Wa, Wb, Wc, MA, MB, MC, maxNumIters*iterFact, 0.1)
+        success = biM.backpropM(Wa, Wb, Wc, MA, MB, MC, maxNumIters*iterFact, 0.1, 0.01)
         iterFact = 1
 
         if not success:
@@ -194,10 +194,12 @@ def intSolutionSearch(n, p, maxTries, maxNumIters, tol,
             MB = bestMB_np.copy()
             MC = bestMC_np.copy()
 
+        sm.printMM(MA, MB, -999, -999, -999, -999)
+        print('')
+        sm.printM(MC, i, j)
         print(str(int(np.sum(MA)+np.sum(MB)+np.sum(MC)))+" ("+str(int(numOfMltpls))+")")
 
         if (numOfMltpls == 0):
-            print("Untergrenze erreicht - ENDE")
             np.save("solution", [Wa, Wb, Wc])
             print("in Datei geschrieben")
             finished.value = 1
@@ -211,12 +213,10 @@ if __name__ == '__main__':
     numOfProc = int(mp.cpu_count())
     print("Anzahl Prozessoren: ", numOfProc)
 
-    n = 3
-    p = 23
+    n = 2
+    p = 7
 
     nn = int(n**2)
-
-    tol = 0.01
 
     mutex = mp.Lock()
     finished = mp.Value('i', 0)
@@ -228,7 +228,7 @@ if __name__ == '__main__':
     bestMC = mp.RawArray('d', np.ones(p*nn, dtype=float))
 
     procs = [mp.Process(target=intSolutionSearch,
-                        args=(n, p, 50000, 1000000, tol, bestWa, bestWb, bestWc, bestMA, bestMB, bestMC, mutex, finished, i))
+                        args=(n, p, 50000, 1000000, bestWa, bestWb, bestWc, bestMA, bestMB, bestMC, mutex, finished, i))
              for i in range(numOfProc)]
 
     for pp in procs:

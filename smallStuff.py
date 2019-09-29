@@ -40,15 +40,4 @@ def printMM(MA, MB, iA=-999, jA=-999, iB=-999, jB=-999):
                 else:
                     print("🍏", end='', flush=True)
         print('')
-    return  # printM
-
-
-if __name__ == '__main__':
-    n = 3
-    p = 23
-    nn = n**2
-
-    MA = np.ones([p, nn])
-    MB = np.ones([p, nn])
-
-    printM(MA, 3, 4, [(6, 4), (7, 7)])
+    return  # printMM
