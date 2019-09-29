@@ -5,82 +5,59 @@ import multiprocessing as mp
 import time
 import uuid
 from numba import jit
+import checkSolution as cs
+import os
 np.set_printoptions(precision=2, suppress=True)
 
 
-def PA(W):  # no copy / overwriting !
+def PA(W):
     W[0] = np.minimum(np.maximum(np.round(W[0]), -1.0), 1.0)
     W[1] = np.minimum(np.maximum(np.round(W[1]), -1.0), 1.0)
     W[2] = np.minimum(np.maximum(np.round(W[2]), -1.0), 1.0)
     return W  # PA
 
 
-def PB(W):  # copy / not overwriting
-    minDist = 99999.9
-    solFound = False
-    WaRet = []
-    WbRet = []
-    WcRet = []
-    for tries in range(3):
-        Wa = W[0].copy()
-        Wb = W[1].copy()
-        Wc = W[2].copy()
-        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1, 0.01)
-        if success > 0:
-            dist = np.linalg.norm(Wa-W[0], 2)**2+np.linalg.norm(Wb-W[1],
-                                                                2)**2+np.linalg.norm(Wc-W[2], 2)**2
-            if dist < minDist:
-                solFound = True
-                minDist = dist
-                WaRet = Wa
-                WbRet = Wb
-                WcRet = Wc
-    if solFound:
-        return [WaRet, WbRet, WcRet], True
-    return W, False  # PB
-
-
-def checkSolution(W):
-    p = W[0].shape[0]
+def PB(W):
     nn = W[0].shape[1]
+    p = W[0].shape[0]
     n = int(np.sqrt(nn))
-    BIdx = np.array([k*n for k in range(n)])
-    c = np.zeros(nn, dtype=float)
-    Wa = np.maximum(np.minimum(np.round(W[0]), 1.0), -1.0)
-    Wb = np.maximum(np.minimum(np.round(W[1]), 1.0), -1.0)
-    Wc = np.maximum(np.minimum(np.round(W[2]), 1.0), -1.0)
+    numOfProc = 4
+    WAs = [mp.RawArray('d', W[0].reshape(nn*p)) for i in range(numOfProc)]
+    WBs = [mp.RawArray('d', W[1].reshape(nn*p)) for i in range(numOfProc)]
+    WCs = [mp.RawArray('d', W[2].reshape(nn*p)) for i in range(numOfProc)]
 
-    @jit(nopython=True, nogil=True, cache=True)
-    def fastLoop(n, nn, p, BIdx, c, Wa, Wb, Wc):
-        for i in range(100):
-            a = np.random.rand(nn)*2.0-1.0
-            b = np.random.rand(nn)*2.0-1.0
-            nA = np.linalg.norm(a, 2)
-            nB = np.linalg.norm(b, 2)
+    def backprop(WaMP, WbMP, WcMP, nn, p, i):
+        Wa = np.frombuffer(WaMP, dtype='d').reshape([p, nn])
+        Wb = np.frombuffer(WbMP, dtype='d').reshape([p, nn])
+        Wc = np.frombuffer(WcMP, dtype='d').reshape([nn, p])
+        biM.backpropNueRND(Wa, Wb, Wc, 30000000, 0.01, 0.1, 0.1, i)
+        return  # backprop
 
-            if np.abs(nA) > 0.1 and np.abs(nB) > 0.1:
-                a /= nA
-                b /= nB
+    procs = [mp.Process(target=backprop, args=(WAs[i], WBs[i], WCs[i], nn, p, i))
+             for i in range(numOfProc)]
+    for pp in procs:
+        pp.start()
+    for pp in procs:
+        pp.join()
 
-                for ii in range(n):  # Matrixmultiplikation für abgerollte Matrizen
-                    AA = a[ii*n:ii*n+n]
-                    for jj in range(n):
-                        BB = b[BIdx+jj]
-                        c[ii*n+jj] = AA.dot(BB)
+    WAs = [np.frombuffer(WAs[i], dtype='d').reshape([p, nn]) for i in range(numOfProc)]
+    WBs = [np.frombuffer(WBs[i], dtype='d').reshape([p, nn]) for i in range(numOfProc)]
+    WCs = [np.frombuffer(WCs[i], dtype='d').reshape([nn, p]) for i in range(numOfProc)]
 
-                aWaveStar = Wa.dot(a)
-                bWaveStar = Wb.dot(b)
-                cWaveStar = aWaveStar*bWaveStar
-                cWave = Wc.dot(cWaveStar)
-                errC = cWave-c
-                err2Norm = np.linalg.norm(errC, 2)
-                if err2Norm > 0.001:
-                    return False
-            else:
-                i -= 1
-        return True  # fastLoop
-    ret = fastLoop(n, nn, p, BIdx, c, Wa, Wb, Wc)
-    return ret  # checkSolution
+    minDist = 999.9
+    WaRet, WbRet, WcRet = [], [], []
+    success = False
+    for i in range(numOfProc):
+        if np.isnan(WAs[i].any()) or np.isnan(WBs[i].any()) or np.isnan(WCs[i].any()):
+            dist = 999.9
+        else:
+            dist = np.linalg.norm(WAs[i]-W[0], 2)**2+np.linalg.norm(WBs[i]-W[1],
+                                                                    2)**2+np.linalg.norm(WCs[i]-W[2], 2)**2
+        if dist < minDist:
+            minDist = dist
+            WaRet, WbRet, WcRet = WAs[i], WBs[i], WCs[i]
+            success = True
+    return [WaRet, WbRet, WcRet], success  # PB
 
 
 @jit(nopython=True, nogil=True, cache=True)
@@ -146,10 +123,13 @@ def roundInit(n, p):
     nn = int(n**2)
     success = -1
     while success < 0:
+        print("roundInit - Initialisierung ...")
         Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
-        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1, 0.01)  # 0.1,0.01
+        success = biM.backpropNue(Wa, Wb, Wc, 90000000, 0.01, 0.05, 0.1)
+        print("roundInit - success=", success)
+    print("roundInit - Initialisierung erfolgreich")
     MA = np.ones(Wa.shape)
     MB = np.ones(Wb.shape)
     MC = np.ones(Wc.shape)
@@ -158,6 +138,8 @@ def roundInit(n, p):
     TC = np.ones(Wc.shape)
     ei = np.zeros(nn, dtype=float)
     rounds = 0
+    noRoundForIters = 0
+    iters = 0
     while True:
         i, j, err, matSel = findWeight(Wa, Wb, Wc, TA, TB, TC, ei)
         if i < 0:
@@ -177,12 +159,15 @@ def roundInit(n, p):
             TC[i, j] = 0
             MC[i, j] = 0
             WcT[i, j] = np.minimum(np.maximum(np.round(WcT[i, j]), -1), 1)
-        success = biM.backpropM(WaT, WbT, WcT, MA, MB, MC, 100000, 0.1, 0.01)
+        success = biM.backpropNueM2(WaT, WbT, WcT, MA, MB, MC, 100000,
+                                    0.1, 0.05, 0.05, 0.1, 0.0001, 10000)
         if success > 0:
             Wa = WaT
             Wb = WbT
             Wc = WcT
             rounds += 1
+            noRoundForIters = 0
+            print("o", end=" ", flush=True)
         else:
             if matSel == 0:
                 MA[i, j] = 1
@@ -190,55 +175,42 @@ def roundInit(n, p):
                 MB[i, j] = 1
             if matSel == 2:
                 MC[i, j] = 1
-    #print("roundInit-Rundungen: ", str(rounds))
+            noRoundForIters += 1
+            print("x", end=" ", flush=True)
+        if noRoundForIters > 100:  # 100
+            print("keine Rundungen mehr seit ... -> Abbruch")
+            break
+        iters += 1
+    print("roundInit-Rundungen: ", str(rounds))
     return [Wa, Wb, Wc]  # roundInit
 
 
-def diffMap(id, mutex):
-    p = 23
-    n = 3
+def diffMap(n, p, id):
     nn = int(n**2)
+    print("n: ", n, "     p: ", p, "     beta: 1")
     seed = int(time.time())+int(uuid.uuid4())+id
     np.random.seed(seed % 135790)
     W = roundInit(n, p)
     i = 0  # iteration
-    numOfTries = 0
-    diffs = []
-    jumps = []  # indices of jumps
-    heights = []
-    numOfJumps = 0
-
-    maxNumIters = 5000
-
-    facs = [np.round(0.01*i, 3) for i in range(1, 101)]
-    jumpFactor = facs[np.random.randint(0, len(facs))]
-
+    maxNumIters = 5000  # fits for n=3, p=23
+    jumpFactor = 0.25
     minDiff = 99999
     maxDiff = -99999
     inBand = 0
     bandWith = 10
-
     while True:
         s = False
         while not s:
-            PBx, s = PB(W)  # not overwriting
+            PBx, s = PB(W)
             if not s:
                 print("   Prz: ", id, " BP failed -> reset")
-                np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time())+"_"+"V21",
-                        [0, 0, 0, jumpFactor, 0, 0, 0, i, 0, -1])
                 seed = int(time.time())+int(uuid.uuid4())+id
                 np.random.seed(seed % 135745)
                 W = roundInit(n, p)
-                numOfTries += 1
-                diffs = []
-                jumps = []
-                heights = []
-                numOfJumps = 0
                 minDiff = 99999
                 maxDiff = -99999
                 inBand = 0
                 i = 0
-                jumpFactor = facs[np.random.randint(0, len(facs))]
         PAy = PA([2.0*PBx[0]-W[0], 2.0*PBx[1]-W[1], 2.0*PBx[2]-W[2]])
         delta = [PAy[0]-PBx[0], PAy[1]-PBx[1], PAy[2]-PBx[2]]
         W = [W[0]+delta[0], W[1]+delta[1], W[2]+delta[2]]
@@ -248,42 +220,19 @@ def diffMap(id, mutex):
         diffs.append(norm2Delta)
 
         if norm2Delta < 0.5:
-            mutex.acquire()
             print(id, ", Lösung gefunden?")
-            WW = PA(PB(W)[0])  # PA is overwriting, but PB is not
-            c2 = checkSolution(WW)
-            if c2:
+            WW = PA(PB(W)[0])
+            if cs.checkSolutionInt(WW):
                 print(id, ".... Lösung korrekt")
-                mutex.release()
-                np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time())+"_"+"V21",
-                        [WW[0], WW[1], WW[2], jumpFactor, diffs, jumps, heights, i, 0, numOfTries])
-                W = roundInit(n, p)
-                numOfTries = 0
-                diffs = []
-                jumps = []
-                heights = []
-                numOfJumps = 0
-                minDiff = 99999
-                maxDiff = -99999
-                inBand = 0
-                i = 0
-                jumpFactor = facs[np.random.randint(0, len(facs))]
+                np.save("solution", [WW[0], WW[1], WW[2]])
+                return
             else:
                 print(id, ".... keine gültige Lösung")
-                mutex.release()
-
-        mutex.acquire()
-        if i % 100 == 0 and i > 0:
+        if i % 1 == 0 and i > 0:
             print("---------------------------")
-            print("Prozess:", id)
             print("Iter.:  ", i)
             print("Delta:  ", norm2Delta)
             print("Jumps:  ", numOfJumps)
-        if i > maxNumIters:  # and norm2Delta > 3.0:
-            print(i, " cycles -> Reset")
-            print("tries:", numOfTries)
-        mutex.release()
-
         if len(diffs) > bandWith:
             minDiff = min(diffs[max(len(diffs)-bandWith, 0): len(diffs)])
             maxDiff = max(diffs[max(len(diffs)-bandWith, 0): len(diffs)])
@@ -295,40 +244,19 @@ def diffMap(id, mutex):
             W[0] += (np.random.rand(p*nn).reshape([p, nn])*2.0-1.0)*jumpFactor
             W[1] += (np.random.rand(p*nn).reshape([p, nn])*2.0-1.0)*jumpFactor
             W[2] += (np.random.rand(p*nn).reshape([nn, p])*2.0-1.0)*jumpFactor
-            jumps.append(i)
-            heights.append(1)
-            numOfJumps += 1
-        if i >= maxNumIters:
-            np.save("solution_"+str(n)+"_"+str(i)+"_"+str(time.time())+"_"+"V21",
-                    [0, 0, 0, jumpFactor, 0, 0, 0, i, 0, numOfTries])
+            inBand = 0
+        if i > maxNumIters:
+            print(i, " cycles -> Reset")
             seed = int(time.time())+int(uuid.uuid4())+id
             np.random.seed(seed % 135790)
             W = roundInit(n, p)
-            numOfTries = 0
-            diffs = []
-            jumps = []
-            heights = []
-            numOfJumps = 0
             minDiff = 99999
             maxDiff = -99999
             inBand = 0
             i = 0
-            jumpFactor = facs[np.random.randint(0, len(facs))]
         i += 1
     return  # diffMap
 
 
 if __name__ == '__main__':
-    numOfProc = int(mp.cpu_count())*0+2
-    print("Anzahl Prozessoren: ", numOfProc)
-
-    mutex = mp.Lock()
-    procs = [mp.Process(target=diffMap, args=(i, mutex)) for i in range(numOfProc)]
-
-    for pp in procs:
-        pp.start()
-    for pp in procs:
-        pp.join()
-
-
-#
+    diffMap(n=3, p=23, id=0)

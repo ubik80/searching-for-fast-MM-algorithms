@@ -12,9 +12,6 @@ np.set_printoptions(precision=2, suppress=True)
 
 @jit(nopython=True, nogil=True, cache=True)
 def rankWeight(i, j, Wa, Wb, Wc, baseDev, matSel, WaiWci, WbiWci, WajWbj, ei):
-    nn = Wa.shape[1]
-    p = Wa.shape[0]
-    n = int(np.sqrt(nn))
     if matSel == 0:
         deltaVec = (np.round(Wa[i, j])-Wa[i, j])*WbiWci[i]
     elif matSel == 1:
@@ -187,7 +184,7 @@ def intSolutionSearch(n, p, maxTries, maxNumIters, tol,
                 numOfMltpls = np.sum(bestMA_np)+np.sum(bestMB_np)+np.sum(bestMC_np)
                 oldBest = numOfMltpls
         if np.sum(np.isnan(Wa)) > 0 or np.sum(np.isnan(Wb)) > 0 or np.sum(np.isnan(Wc)) > 0:
-            print("NAN NAN NAN NAN NAN NAN NAN NAN NAN")
+            print("NAN")
             if id == 0:
                 print("Daten tauschen")
             Wa = bestWa_np.copy()
@@ -197,14 +194,11 @@ def intSolutionSearch(n, p, maxTries, maxNumIters, tol,
             MB = bestMB_np.copy()
             MC = bestMC_np.copy()
 
-        # sm.printMM(MA,MB,-999,-999,-999,-999)
-        # print('')
-        # sm.printM(MC,i,j)
         print(str(int(np.sum(MA)+np.sum(MB)+np.sum(MC)))+" ("+str(int(numOfMltpls))+")")
 
         if (numOfMltpls == 0):
             print("Untergrenze erreicht - ENDE")
-            np.save("solution_n3_"+str(time.time())+"_V6", [Wa, Wb, Wc])
+            np.save("solution", [Wa, Wb, Wc])
             print("in Datei geschrieben")
             finished.value = 1
             mutex.release()
@@ -214,7 +208,6 @@ def intSolutionSearch(n, p, maxTries, maxNumIters, tol,
 
 
 if __name__ == '__main__':
-    start = time.time()
     numOfProc = int(mp.cpu_count())
     print("Anzahl Prozessoren: ", numOfProc)
 
@@ -242,8 +235,3 @@ if __name__ == '__main__':
         pp.start()
     for pp in procs:
         pp.join()
-
-    end = time.time()
-    print("Dauer:", end - start)
-
-    #

@@ -10,7 +10,6 @@ def buildExprList(M, maxLength):
     newExprFound = True
     endI = 0
     while newExprFound and len(expr) < maxLength:
-        # print(len(expr))
         newExprFound = False
         startI = endI
         endI = len(expr)
@@ -36,7 +35,6 @@ def buildExprList(M, maxLength):
                             break
             if len(expr) == maxLength:
                 break
-                # print(newExpr)
     return expr
 
 
@@ -160,7 +158,6 @@ def vecAdd(x, y):
 
 def countOptimizedOps(A, L, R):
     if len(A) == 0:
-        print("no reduction")
         return -1
     totOps = 0
     x = np.ones(R[0].shape[1])
