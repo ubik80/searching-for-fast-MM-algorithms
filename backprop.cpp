@@ -496,7 +496,6 @@ auto backpropNueM2(py::array_t<double> _Wa, py::array_t<double> _Wb,
       }      // if (inBand > windowSize)
     }        // if (nA > 0.01 && nB > 0.01)
   }          // iter
-
   return -2;
 }  // backprop
 
@@ -600,11 +599,9 @@ auto backpropNueRND(py::array_t<double> _Wa, py::array_t<double> _Wb,
       if (errTolCnt > 500) {                    // changed from 500
         for (auto i = 0; i < nn * p; i++) {
           if (isnan(Wa[i])) {
-            // std::cout << "... NAN at iter: " << (int)iter << std::endl;
             return -1;
           }  // if (isnan(Wa[i]))
         }    // i
-        // std::cout << "... finished, iters: " << (int)iter << std::endl;
         return iter;
       }  // if
     }    // if (nA > 0.01 && nB > 0.01)

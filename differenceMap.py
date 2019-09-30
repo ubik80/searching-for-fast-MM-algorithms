@@ -75,7 +75,7 @@ def PB(W):
         Wa = np.frombuffer(WaMP, dtype='d').reshape([p, nn])
         Wb = np.frombuffer(WbMP, dtype='d').reshape([p, nn])
         Wc = np.frombuffer(WcMP, dtype='d').reshape([nn, p])
-        bp.backpropNueRND(Wa, Wb, Wc, 30000000, 0.01, 0.1, 0.1, i)
+        bp.backpropNueRND(Wa, Wb, Wc, 3000000, 0.01, 0.1, 0.1, i)
         return  # backprop
 
     procs = [mp.Process(target=backprop, args=(WAs[i], WBs[i], WCs[i], nn, p, i))
@@ -93,15 +93,13 @@ def PB(W):
     WaRet, WbRet, WcRet = [], [], []
     success = False
     for i in range(numOfProc):
-        if np.isnan(WAs[i].any()) or np.isnan(WBs[i].any()) or np.isnan(WCs[i].any()):
-            dist = 999.9
-        else:
+        if not (np.isnan(WAs[i].any()) or np.isnan(WBs[i].any()) or np.isnan(WCs[i].any())):
             dist = np.linalg.norm(WAs[i]-W[0], 2)**2+np.linalg.norm(WBs[i]-W[1],
                                                                     2)**2+np.linalg.norm(WCs[i]-W[2], 2)**2
-        if dist < minDist:
-            minDist = dist
-            WaRet, WbRet, WcRet = WAs[i], WBs[i], WCs[i]
-            success = True
+            if dist < minDist:
+                minDist = dist
+                WaRet, WbRet, WcRet = WAs[i], WBs[i], WCs[i]
+                success = True
     return [WaRet, WbRet, WcRet], success  # PB
 
 
@@ -172,7 +170,7 @@ def roundInit(n, p):
         Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
-        success = bp.backpropNueRND(Wa, Wb, Wc, 90000000, 0.01, 0.05, 0.1, 0)
+        success = bp.backpropNueRND(Wa, Wb, Wc, 3000000, 0.01, 0.1, 0.1, 0)
         print("roundInit - success=", success)
     print("roundInit - Initialisierung erfolgreich")
     MA = np.ones(Wa.shape)
@@ -204,8 +202,7 @@ def roundInit(n, p):
             TC[i, j] = 0
             MC[i, j] = 0
             WcT[i, j] = np.minimum(np.maximum(np.round(WcT[i, j]), -1), 1)
-        success = bp.backpropM(WaT, WbT, WcT, MA, MB, MC,
-                               100000, 0.05, 0.05, 0.1)
+        success = bp.backpropM(WaT, WbT, WcT, MA, MB, MC, 100000, 0.1, 0.1, 0.01)
         if success > 0:
             Wa = WaT
             Wb = WbT
@@ -222,9 +219,8 @@ def roundInit(n, p):
                 MC[i, j] = 1
             noRoundForIters += 1
             print("x", end=" ", flush=True)
-        if noRoundForIters > 100:  # 100
-            print("keine Rundungen mehr seit ... -> Abbruch")
-            break
+        # if noRoundForIters > 100:
+        #     break
         iters += 1
     print("roundInit-Rundungen: ", str(rounds))
     return [Wa, Wb, Wc]  # roundInit
