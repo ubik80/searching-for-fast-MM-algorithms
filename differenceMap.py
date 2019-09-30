@@ -75,7 +75,7 @@ def PB(W):
         Wa = np.frombuffer(WaMP, dtype='d').reshape([p, nn])
         Wb = np.frombuffer(WbMP, dtype='d').reshape([p, nn])
         Wc = np.frombuffer(WcMP, dtype='d').reshape([nn, p])
-        bp.backpropNueRND(Wa, Wb, Wc, 3000000, 0.01, 0.1, 0.1, i)
+        bp.backpropNotMasked(Wa, Wb, Wc, 3000000, 0.01, 0.1, 0.1, i)
         return  # backprop
 
     procs = [mp.Process(target=backprop, args=(WAs[i], WBs[i], WCs[i], nn, p, i))
@@ -170,7 +170,7 @@ def roundInit(n, p):
         Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
-        success = bp.backpropNueRND(Wa, Wb, Wc, 3000000, 0.01, 0.1, 0.1, 0)
+        success = bp.backpropNotMasked(Wa, Wb, Wc, 3000000, 0.01, 0.1, 0.1, 0)
         print("roundInit - success=", success)
     print("roundInit - Initialisierung erfolgreich")
     MA = np.ones(Wa.shape)
@@ -202,7 +202,7 @@ def roundInit(n, p):
             TC[i, j] = 0
             MC[i, j] = 0
             WcT[i, j] = np.minimum(np.maximum(np.round(WcT[i, j]), -1), 1)
-        success = bp.backpropM(WaT, WbT, WcT, MA, MB, MC, 100000, 0.1, 0.1, 0.01)
+        success = bp.backpropMasked(WaT, WbT, WcT, MA, MB, MC, 100000, 0.1, 0.1, 0.01)
         if success > 0:
             Wa = WaT
             Wb = WbT
