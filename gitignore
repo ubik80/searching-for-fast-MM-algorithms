@@ -4,5 +4,5 @@ __pycache__/
 *save-commands*
 *.npy
 *.png
-*gitignore
+.gitignore
 *DS_Store*
