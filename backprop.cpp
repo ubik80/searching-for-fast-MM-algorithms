@@ -11,8 +11,9 @@ namespace py = pybind11;
 auto backpropM(py::array_t<double> _Wa, py::array_t<double> _Wb,
                py::array_t<double> _Wc, py::array_t<double> _Ma,
                py::array_t<double> _Mb, py::array_t<double> _Mc,
-               int maxNumOfIters, double _nue, double tol) {
-  double nue = -_nue;
+               int maxNumOfIters, double _nueAB, double _nueC, double tol) {
+  double nueAB = -_nueAB;
+  double nueC = -_nueC;
   auto bufWa = _Wa.request();
   auto bufWb = _Wb.request();
   auto bufWc = _Wc.request();
@@ -85,7 +86,6 @@ auto backpropM(py::array_t<double> _Wa, py::array_t<double> _Wb,
                      std::minus<double>());
       double errCNorm =
           sqrt(std::inner_product(errC.begin(), errC.end(), errC.begin(), 0.0));
-      std::endl;
       if (errCNorm > tol) {  // changed from 0.01
         errTolCnt = 0;
       } else {
@@ -99,8 +99,8 @@ auto backpropM(py::array_t<double> _Wa, py::array_t<double> _Wb,
       }                               // i
       for (auto i = 0; i < p; i++) {  // dWa=-nue*outer(errCStar*bWaveStar,a)
         for (auto j = 0; j < nn; j++) {
-          deltaWa[i * nn + j] = nue * errCStar[i] * bWaveStar[i] * a[j];
-          deltaWb[i * nn + j] = nue * errCStar[i] * aWaveStar[i] * b[j];
+          deltaWa[i * nn + j] = nueAB * errCStar[i] * bWaveStar[i] * a[j];
+          deltaWb[i * nn + j] = nueAB * errCStar[i] * aWaveStar[i] * b[j];
           deltaWa[i * nn + j] *= Ma[i * nn + j];
           deltaWb[i * nn + j] *= Mb[i * nn + j];
           Wa[i * nn + j] += deltaWa[i * nn + j];  // update
@@ -109,7 +109,7 @@ auto backpropM(py::array_t<double> _Wa, py::array_t<double> _Wb,
       }                                           // i
       for (auto i = 0; i < nn; i++) {  // deltaWc=-nue*outer(errC,cWaveStar)
         for (auto j = 0; j < p; j++) {
-          deltaWc[i * p + j] = nue * errC[i] * cWaveStar[j];
+          deltaWc[i * p + j] = nueC * errC[i] * cWaveStar[j];
           deltaWc[i * p + j] *= Mc[i * p + j];
           Wc[i * p + j] += deltaWc[i * p + j];  // update
         }                                       // j
@@ -610,7 +610,7 @@ auto backpropNueRND(py::array_t<double> _Wa, py::array_t<double> _Wb,
     }    // if (nA > 0.01 && nB > 0.01)
   }      // iter
   return -2;
-}  // backprop
+}  // backpropNueRND
 
 PYBIND11_MODULE(backprop, m) {
   m.def("backpropM", backpropM);

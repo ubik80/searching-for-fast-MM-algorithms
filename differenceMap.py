@@ -1,13 +1,58 @@
 # coding: utf8
 import numpy as np
-import backprop as biM
+import backprop as bp
 import multiprocessing as mp
 import time
 import uuid
 from numba import jit
-import checkSolution as cs
 import os
 np.set_printoptions(precision=2, suppress=True)
+
+
+def checkSolution(W, limit):
+    p = W[0].shape[0]
+    nn = W[0].shape[1]
+    n = int(np.sqrt(nn))
+    Wa = np.round(W[0])
+    Wb = np.round(W[1])
+    Wc = np.round(W[2])
+    Wa = np.maximum(np.minimum(Wa, 1.0), -1.0)
+    Wb = np.maximum(np.minimum(Wb, 1.0), -1.0)
+    Wc = np.maximum(np.minimum(Wc, 1.0), -1.0)
+    BIdx = np.array([k*n for k in range(n)])
+    c = np.zeros(nn, dtype=float)
+
+    @jit(nopython=True, nogil=True, cache=True)
+    def fastLoop(n, nn, p, BIdx, c, Wa, Wb, Wc, limit):
+        for i in range(100):
+            a = np.random.rand(nn)*2.0-1.0
+            b = np.random.rand(nn)*2.0-1.0
+            nA = np.linalg.norm(a, 2)
+            nB = np.linalg.norm(b, 2)
+
+            if np.abs(nA) > 0.1 and np.abs(nB) > 0.1:
+                a /= nA
+                b /= nB
+
+                for ii in range(n):  # Matrixmultiplikation für abgerollte Matrizen
+                    AA = a[ii*n:ii*n+n]
+                    for jj in range(n):
+                        BB = b[BIdx+jj]
+                        c[ii*n+jj] = AA.dot(BB)
+
+                aWaveStar = Wa.dot(a)
+                bWaveStar = Wb.dot(b)
+                cWaveStar = aWaveStar*bWaveStar
+                cWave = Wc.dot(cWaveStar)
+                errC = cWave-c
+                err2Norm = np.linalg.norm(errC, 2)
+                if err2Norm > limit:
+                    return False
+            else:
+                i -= 1
+        return True  # fastLoop
+    ret = fastLoop(n, nn, p, BIdx, c, Wa, Wb, Wc, limit)
+    return ret  # checkSolution
 
 
 def PA(W):
@@ -30,7 +75,7 @@ def PB(W):
         Wa = np.frombuffer(WaMP, dtype='d').reshape([p, nn])
         Wb = np.frombuffer(WbMP, dtype='d').reshape([p, nn])
         Wc = np.frombuffer(WcMP, dtype='d').reshape([nn, p])
-        biM.backpropNueRND(Wa, Wb, Wc, 30000000, 0.01, 0.1, 0.1, i)
+        bp.backpropNueRND(Wa, Wb, Wc, 30000000, 0.01, 0.1, 0.1, i)
         return  # backprop
 
     procs = [mp.Process(target=backprop, args=(WAs[i], WBs[i], WCs[i], nn, p, i))
@@ -127,7 +172,7 @@ def roundInit(n, p):
         Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
-        success = biM.backpropNue(Wa, Wb, Wc, 90000000, 0.01, 0.05, 0.1)
+        success = bp.backpropNueRND(Wa, Wb, Wc, 90000000, 0.01, 0.05, 0.1, 0)
         print("roundInit - success=", success)
     print("roundInit - Initialisierung erfolgreich")
     MA = np.ones(Wa.shape)
@@ -159,8 +204,8 @@ def roundInit(n, p):
             TC[i, j] = 0
             MC[i, j] = 0
             WcT[i, j] = np.minimum(np.maximum(np.round(WcT[i, j]), -1), 1)
-        success = biM.backpropNueM2(WaT, WbT, WcT, MA, MB, MC, 100000,
-                                    0.1, 0.05, 0.05, 0.1, 0.0001, 10000)
+        success = bp.backpropM(WaT, WbT, WcT, MA, MB, MC,
+                               100000, 0.05, 0.05, 0.1)
         if success > 0:
             Wa = WaT
             Wb = WbT
@@ -192,12 +237,13 @@ def diffMap(n, p, id):
     np.random.seed(seed % 135790)
     W = roundInit(n, p)
     i = 0  # iteration
+    diffs = []
     maxNumIters = 5000  # fits for n=3, p=23
-    jumpFactor = 0.25
+    jumpFactor = 0.25  # fits for n=3, p=23
     minDiff = 99999
     maxDiff = -99999
     inBand = 0
-    bandWith = 10
+    bandWith = 10  # fits for n=3, p=23
     while True:
         s = False
         while not s:
@@ -222,7 +268,7 @@ def diffMap(n, p, id):
         if norm2Delta < 0.5:
             print(id, ", Lösung gefunden?")
             WW = PA(PB(W)[0])
-            if cs.checkSolutionInt(WW):
+            if checkSolution(WW,  0.00000001):
                 print(id, ".... Lösung korrekt")
                 np.save("solution", [WW[0], WW[1], WW[2]])
                 return
@@ -232,7 +278,6 @@ def diffMap(n, p, id):
             print("---------------------------")
             print("Iter.:  ", i)
             print("Delta:  ", norm2Delta)
-            print("Jumps:  ", numOfJumps)
         if len(diffs) > bandWith:
             minDiff = min(diffs[max(len(diffs)-bandWith, 0): len(diffs)])
             maxDiff = max(diffs[max(len(diffs)-bandWith, 0): len(diffs)])

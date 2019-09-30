@@ -3,7 +3,7 @@ import os
 import numpy as np
 from numba import jit
 import smallStuff as sm
-import backprop as biM
+import backprop as bp
 import multiprocessing as mp
 import time
 import uuid
@@ -108,7 +108,7 @@ def intSolutionSearch(n, p, maxTries, maxNumIters,
         Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
-        success = biM.backprop(Wa, Wb, Wc, 3000000, 0.1, 0.01)
+        success = bp.backpropNueRND(Wa, Wb, Wc, 90000000, 0.01, 0.05, 0.1, 0)
     MA = np.ones(Wa.shape)
     MB = np.ones(Wb.shape)
     MC = np.ones(Wc.shape)
@@ -137,7 +137,7 @@ def intSolutionSearch(n, p, maxTries, maxNumIters,
             MC[i, j] = 0.0
             Wc[i, j] = float(min(max(round(Wc[i, j]), -1.0), 1.0))
 
-        success = biM.backpropM(Wa, Wb, Wc, MA, MB, MC, maxNumIters*iterFact, 0.1, 0.01)
+        success = bp.backpropM(Wa, Wb, Wc, MA, MB, MC, maxNumIters*iterFact, 0.1, 0.1, 0.01)
         iterFact = 1
 
         if not success:
