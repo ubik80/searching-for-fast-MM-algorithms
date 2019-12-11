@@ -1,3 +1,6 @@
+# Dieser Code gehört zur Masterarbeit Master_Thesis_T_Spaeth_V1.0.pdf
+# Zusammenschaltung von Difference-Map und Backpropagation Algrithmus
+
 # coding: utf8
 import numpy as np
 import backprop as bp
@@ -8,7 +11,8 @@ from numba import jit
 import os
 np.set_printoptions(precision=2, suppress=True)
 
-
+# Überprüfen, ob Lösung 'W' entsprechend Fehlerlimit 'limit' gültig ist
+# W=(Wa,Wb,Wc)
 def checkSolution(W, limit):
     p = W[0].shape[0]
     nn = W[0].shape[1]
@@ -22,6 +26,7 @@ def checkSolution(W, limit):
     BIdx = np.array([k*n for k in range(n)])
     c = np.zeros(nn, dtype=float)
 
+    # Beschleunigung der inneren Schleife mittels JIT-Compiler
     @jit(nopython=True, nogil=True, cache=True)
     def fastLoop(n, nn, p, BIdx, c, Wa, Wb, Wc, limit):
         for i in range(100):
@@ -34,7 +39,7 @@ def checkSolution(W, limit):
                 a /= nA
                 b /= nB
 
-                for ii in range(n):  # Matrixmultiplikation für abgerollte Matrizen
+                for ii in range(n):  # Matrixmultiplikation für abgerollte Matrizen (wegen Limitierungen von numba)
                     AA = a[ii*n:ii*n+n]
                     for jj in range(n):
                         BB = b[BIdx+jj]
@@ -54,14 +59,16 @@ def checkSolution(W, limit):
     ret = fastLoop(n, nn, p, BIdx, c, Wa, Wb, Wc, limit)
     return ret  # checkSolution
 
-
+# Projektion auf Menge A
+# W=(Wa,Wb,Wc)
 def PA(W):
     W[0] = np.minimum(np.maximum(np.round(W[0]), -1.0), 1.0)
     W[1] = np.minimum(np.maximum(np.round(W[1]), -1.0), 1.0)
     W[2] = np.minimum(np.maximum(np.round(W[2]), -1.0), 1.0)
     return W  # PA
 
-
+# Projektion auf Menge B, parallelisiert
+# W=(Wa,Wb,Wc)
 def PB(W):
     nn = W[0].shape[1]
     p = W[0].shape[0]
@@ -71,6 +78,7 @@ def PB(W):
     WBs = [mp.RawArray('d', W[1].reshape(nn*p)) for i in range(numOfProc)]
     WCs = [mp.RawArray('d', W[2].reshape(nn*p)) for i in range(numOfProc)]
 
+    # für parallelen Aufruf
     def backprop(WaMP, WbMP, WcMP, nn, p, i):
         Wa = np.frombuffer(WaMP, dtype='d').reshape([p, nn])
         Wb = np.frombuffer(WbMP, dtype='d').reshape([p, nn])
@@ -102,7 +110,7 @@ def PB(W):
                 success = True
     return [WaRet, WbRet, WcRet], success  # PB
 
-
+# Bewertung von Gewichten, um das nächste Gewicht für die Rundung zu finden
 @jit(nopython=True, nogil=True, cache=True)
 def rankWeight(i, j, Wa, Wb, Wc, baseDev, matSel, WaiWci, WbiWci, WajWbj, ei):
     if matSel == 0:
@@ -116,7 +124,8 @@ def rankWeight(i, j, Wa, Wb, Wc, baseDev, matSel, WaiWci, WbiWci, WajWbj, ei):
     ret = np.linalg.norm(deltaVec+baseDev, 2)
     return ret  # rankWeight
 
-
+# Auffinden des besten Gewichts für die nächste Rundung
+# in MA,MB,MC ausmaskierte Gewichte werden nicht gewählt
 @jit(nopython=True, nogil=True, cache=True)
 def findWeight(Wa, Wb, Wc, MA, MB, MC, ei):
     nn = Wa.shape[1]
@@ -161,7 +170,9 @@ def findWeight(Wa, Wb, Wc, MA, MB, MC, ei):
                     matSel = 2
     return bestI, bestJ, bestErr, matSel  # findWeight
 
-
+# Initialisierungsschritt, für verbesserte Anfangswerte
+# n.. Größe der n x n Matrizen
+# p.. Vorgabe der Anzahl der Produkte
 def roundInit(n, p):
     nn = int(n**2)
     success = -1
@@ -225,7 +236,9 @@ def roundInit(n, p):
     print("roundInit-Rundungen: ", str(rounds))
     return [Wa, Wb, Wc]  # roundInit
 
-
+# Difference-Map Algorithmus, verwendet PA und PB
+# n.. Größe der n x n Matrizen
+# p.. Vorgabe der Anzahl der Produkte
 def diffMap(n, p, id):
     nn = int(n**2)
     print("n: ", n, "     p: ", p, "     beta: 1")
@@ -300,4 +313,4 @@ def diffMap(n, p, id):
 
 
 if __name__ == '__main__':
-    diffMap(n=3, p=23, id=0)
+    diffMap(n=3, p=23, id=0) # hier ggf. andere Matrixgrößen n und Anzahl Produkte p einstellen
