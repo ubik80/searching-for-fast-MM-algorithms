@@ -1,3 +1,5 @@
+//Anpassung des Backpropagation Algorithmus für spezielle NN, wie in Master_Thesis_T_Spaeth.pdf beschrieben
+
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <algorithm>
@@ -6,8 +8,15 @@
 #include <random>
 #include <vector>
 
+//für die Einbindung in Python
 namespace py = pybind11;
 
+//Backpropagation Algorithmus mit Ausmaskierung von Gewichten
+//_Wa,_Wb,_Wc .. bisherige Gegwichtsmatrizen
+//_Ma,_Mb,_Mc .. 0/1 Matrizen 0 bedeutet, Gewicht wird nicht verändert
+//maxNumOfIters .. maximale Anzahl an Iterationen bevor Abbruch
+//_nueAB,_nueC .. Lernraten
+//tol .. Toleranz für Abbruch wegen Fehlerunterschreitung
 auto backpropMasked(py::array_t<double> _Wa, py::array_t<double> _Wb,
                     py::array_t<double> _Wc, py::array_t<double> _Ma,
                     py::array_t<double> _Mb, py::array_t<double> _Mc,
@@ -128,6 +137,11 @@ auto backpropMasked(py::array_t<double> _Wa, py::array_t<double> _Wb,
   return -2;
 }  // backpropMasked
 
+//Backpropagation Algorithmus ohne Ausmaskierung von Gewichten
+//_Wa,_Wb,_Wc .. bisherige Gegwichtsmatrizen
+//maxNumOfIters .. maximale Anzahl an Iterationen bevor Abbruch
+//_nueAB,_nueC .. Lernraten
+//tol .. Toleranz für Abbruch wegen Fehlerunterschreitung
 auto backpropNotMasked(py::array_t<double> _Wa, py::array_t<double> _Wb,
                        py::array_t<double> _Wc, int maxNumOfIters, double tol,
                        double _nueAB, double _nueC, int id) {
@@ -225,7 +239,7 @@ auto backpropNotMasked(py::array_t<double> _Wa, py::array_t<double> _Wb,
           Wc[i * p + j] += deltaWc[i * p + j];  // update
         }                                       // j
       }                                         // i
-      if (errTolCnt > 500) {                    // changed from 500
+      if (errTolCnt > 500) {                    
         for (auto i = 0; i < nn * p; i++) {
           if (isnan(Wa[i])) {
             return -1;
@@ -238,6 +252,7 @@ auto backpropNotMasked(py::array_t<double> _Wa, py::array_t<double> _Wb,
   return -2;
 }  // backpropNotMasked
 
+//Bereitstellung in Python
 PYBIND11_MODULE(backprop, m) {
   m.def("backpropMasked", backpropMasked);
   m.def("backpropNotMasked", backpropNotMasked);
