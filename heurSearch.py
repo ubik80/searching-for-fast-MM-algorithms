@@ -1,3 +1,5 @@
+# Alternativlösung, wie in Masters_Thesis_T_Spaeth_V1.0.pdf beschrieben
+
 # coding: utf8
 import os
 import numpy as np
@@ -9,7 +11,7 @@ import time
 import uuid
 np.set_printoptions(precision=2, suppress=True)
 
-
+# Bewertung von Gewichten, um das nächste Gewicht für die Rundung zu finden
 @jit(nopython=True, nogil=True, cache=True)
 def rankWeight(i, j, Wa, Wb, Wc, baseDev, matSel, WaiWci, WbiWci, WajWbj, ei):
     if matSel == 0:
@@ -23,7 +25,8 @@ def rankWeight(i, j, Wa, Wb, Wc, baseDev, matSel, WaiWci, WbiWci, WajWbj, ei):
     ret = np.linalg.norm(deltaVec+baseDev, 2)
     return ret  # rankWeight
 
-
+# Auffinden des besten Gewichts für die nächste Rundung
+# in MA,MB,MC ausmaskierte Gewichte werden nicht gewählt
 @jit(nopython=True, nogil=True, cache=True)
 def findWeight(Wa, Wb, Wc, MA, MB, MC, ei):
     nn = Wa.shape[1]
@@ -68,7 +71,7 @@ def findWeight(Wa, Wb, Wc, MA, MB, MC, ei):
                     matSel = 2
     return bestI, bestJ, bestErr, matSel  # findWeight
 
-
+# Setzt zufällige Anzahl zufällig gewählter Gewichte auf 'modifizierbar' zurück
 @jit(nopython=True, nogil=True, cache=True)
 def resets(MA, MB, MC):
     nn = MA.shape[1]
@@ -95,7 +98,7 @@ def resets(MA, MB, MC):
                     ss = True
     return
 
-
+# Sucht gültige Algorithmen mittels der in der Masterarbeit beschriebenen heuristischen Alternativlösung
 def intSolutionSearch(n, p, maxTries, maxNumIters,
                       bestWa, bestWb, bestWc, bestMA, bestMB, bestMC, mutex, finished, id):
     seed = int(time.time())+int(uuid.uuid4())+id
@@ -208,13 +211,13 @@ def intSolutionSearch(n, p, maxTries, maxNumIters,
         mutex.release()
     return
 
-
+# Paralleles starten von intSolutionSearch
 if __name__ == '__main__':
     numOfProc = int(mp.cpu_count())
     print("Anzahl Prozessoren: ", numOfProc)
 
-    n = 3
-    p = 23
+    n = 3   #größe der Matrizen
+    p = 23  #Anzahl der Produkte
 
     nn = int(n**2)
 
