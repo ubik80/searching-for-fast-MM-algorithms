@@ -1,6 +1,12 @@
 # searching-for-fast-MM-algorithms
 searching for fast MM algorithms / masters thesis
 
+read:
+
+https://www.researchgate.net/publication/301874145_A_Network_That_Learns_Strassen_Multiplication
+
+https://www.researchgate.net/publication/341942316_Searching_for_fast_matrix_multiplication_algorithms
+
 The subject of this master's thesis is an example of automated learning of algorithms.
 Bilinear algorithms with fewer than n^3 products for the multiplication of n x n matrices
 are searched for. We are using a combination of the backpropagation algorithm and
