@@ -11,6 +11,7 @@ import time
 import uuid
 np.set_printoptions(precision=2, suppress=True)
 
+
 # Bewertung von Gewichten, um das nächste Gewicht für die Rundung zu finden
 @jit(nopython=True, nogil=True, cache=True)
 def rankWeight(i, j, Wa, Wb, Wc, baseDev, matSel, WaiWci, WbiWci, WajWbj, ei):
@@ -24,6 +25,7 @@ def rankWeight(i, j, Wa, Wb, Wc, baseDev, matSel, WaiWci, WbiWci, WajWbj, ei):
         deltaVec = (np.round(Wc[i, j])-Wc[i, j])*WajWbj[j]*ei
     ret = np.linalg.norm(deltaVec+baseDev, 2)
     return ret  # rankWeight
+
 
 # Auffinden des besten Gewichts für die nächste Rundung
 # in MA,MB,MC ausmaskierte Gewichte werden nicht gewählt
@@ -71,6 +73,7 @@ def findWeight(Wa, Wb, Wc, MA, MB, MC, ei):
                     matSel = 2
     return bestI, bestJ, bestErr, matSel  # findWeight
 
+
 # Setzt zufällige Anzahl zufällig gewählter Gewichte auf 'modifizierbar' zurück
 @jit(nopython=True, nogil=True, cache=True)
 def resets(MA, MB, MC):
@@ -98,6 +101,7 @@ def resets(MA, MB, MC):
                     ss = True
     return
 
+
 # Sucht gültige Algorithmen mittels der in der Masterarbeit beschriebenen heuristischen Alternativlösung
 def intSolutionSearch(n, p, maxTries, maxNumIters,
                       bestWa, bestWb, bestWc, bestMA, bestMB, bestMC, mutex, finished, id):
@@ -107,11 +111,13 @@ def intSolutionSearch(n, p, maxTries, maxNumIters,
     nn = int(n**2)
     ei = np.zeros(nn, dtype=float)
     success = -1
+                          
     while success < 0:
         Wa = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wb = np.random.rand(p*nn).reshape([p, nn])*2.0-1.0
         Wc = np.random.rand(nn*p).reshape([nn, p])*2.0-1.0
         success = bp.backpropNotMasked(Wa, Wb, Wc, 90000000, 0.01, 0.05, 0.1, 0)
+        
     MA = np.ones(Wa.shape)
     MB = np.ones(Wb.shape)
     MC = np.ones(Wc.shape)
@@ -210,6 +216,7 @@ def intSolutionSearch(n, p, maxTries, maxNumIters,
             return
         mutex.release()
     return
+
 
 # Paralleles starten von intSolutionSearch
 if __name__ == '__main__':
