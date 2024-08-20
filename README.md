@@ -31,3 +31,6 @@ Even so, it is obvious that the backpropagation algorithm is the most time
 consuming part of the whole solution, that assumption was confirmed using a profiler
 (line profiler). To shorten the running time, the solutions is implemented to run on
 multiple cores (multiprocessing package for python).
+
+If You are only interested in float solutions, have a look at: 
+https://github.com/ubik80/findingFloatMatrixMultiplicationAlgorithmsCUDA
