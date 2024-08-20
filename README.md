@@ -33,4 +33,5 @@ consuming part of the whole solution, that assumption was confirmed using a prof
 multiple cores (multiprocessing package for python).
 
 If You are only interested in float solutions, have a look at: 
+
 https://github.com/ubik80/findingFloatMatrixMultiplicationAlgorithmsCUDA
