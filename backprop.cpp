@@ -8,8 +8,10 @@
 #include <random>
 #include <vector>
 
+
 //für die Einbindung in Python
 namespace py = pybind11;
+
 
 //Backpropagation Algorithmus mit Ausmaskierung von Gewichten
 //_Wa,_Wb,_Wc .. bisherige Gegwichtsmatrizen
@@ -137,6 +139,7 @@ auto backpropMasked(py::array_t<double> _Wa, py::array_t<double> _Wb,
   return -2;
 }  // backpropMasked
 
+
 //Backpropagation Algorithmus ohne Ausmaskierung von Gewichten
 //_Wa,_Wb,_Wc .. bisherige Gegwichtsmatrizen
 //maxNumOfIters .. maximale Anzahl an Iterationen bevor Abbruch
@@ -251,6 +254,7 @@ auto backpropNotMasked(py::array_t<double> _Wa, py::array_t<double> _Wb,
   }      // iter
   return -2;
 }  // backpropNotMasked
+
 
 //Bereitstellung in Python
 PYBIND11_MODULE(backprop, m) {
