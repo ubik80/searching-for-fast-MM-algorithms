@@ -11,6 +11,7 @@ from numba import jit
 import os
 np.set_printoptions(precision=2, suppress=True)
 
+
 # Überprüfen, ob Lösung 'W' entsprechend Fehlerlimit 'limit' gültig ist
 # W=(Wa,Wb,Wc)
 def checkSolution(W, limit):
@@ -59,6 +60,7 @@ def checkSolution(W, limit):
     ret = fastLoop(n, nn, p, BIdx, c, Wa, Wb, Wc, limit)
     return ret  # checkSolution
 
+
 # Projektion auf Menge A
 # W=(Wa,Wb,Wc)
 def PA(W):
@@ -66,6 +68,7 @@ def PA(W):
     W[1] = np.minimum(np.maximum(np.round(W[1]), -1.0), 1.0)
     W[2] = np.minimum(np.maximum(np.round(W[2]), -1.0), 1.0)
     return W  # PA
+
 
 # Projektion auf Menge B, parallelisiert
 # W=(Wa,Wb,Wc)
@@ -110,6 +113,7 @@ def PB(W):
                 success = True
     return [WaRet, WbRet, WcRet], success  # PB
 
+
 # Bewertung von Gewichten, um das nächste Gewicht für die Rundung zu finden
 @jit(nopython=True, nogil=True, cache=True)
 def rankWeight(i, j, Wa, Wb, Wc, baseDev, matSel, WaiWci, WbiWci, WajWbj, ei):
@@ -123,6 +127,7 @@ def rankWeight(i, j, Wa, Wb, Wc, baseDev, matSel, WaiWci, WbiWci, WajWbj, ei):
         deltaVec = (np.round(Wc[i, j])-Wc[i, j])*WajWbj[j]*ei
     ret = np.linalg.norm(deltaVec+baseDev, 2)
     return ret  # rankWeight
+
 
 # Auffinden des besten Gewichts für die nächste Rundung
 # in MA,MB,MC ausmaskierte Gewichte werden nicht gewählt
@@ -169,6 +174,7 @@ def findWeight(Wa, Wb, Wc, MA, MB, MC, ei):
                     bestJ = j
                     matSel = 2
     return bestI, bestJ, bestErr, matSel  # findWeight
+
 
 # Initialisierungsschritt, für verbesserte Anfangswerte
 # n.. Größe der n x n Matrizen
@@ -235,6 +241,7 @@ def roundInit(n, p):
         iters += 1
     print("roundInit-Rundungen: ", str(rounds))
     return [Wa, Wb, Wc]  # roundInit
+
 
 # Difference-Map Algorithmus, verwendet PA und PB
 # n.. Größe der n x n Matrizen
